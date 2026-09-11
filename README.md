@@ -64,6 +64,9 @@ cses submit trailing-zeroes
 cses submit trailing-zeroes/sol.py
 cses submit trailing-zeroes/sol.js
 
+cses next                              # open next unsolved problem
+cses next trailing-zeroes              # open next unsolved after this problem
+
 cses login
 cses whoami
 cses install
