@@ -7,6 +7,7 @@ Usage:
     cses whoami
     cses run [slug|path] [-i]
     cses submit [slug|path]
+    cses next [slug|path]
     cses fetch <cses-task-url> <problem-dir>
     cses new <category> <slug> [url]
     cses install
@@ -34,6 +35,8 @@ from cses_lib import (
     LIST_URL,
     load_dotenv,
     login as do_login,
+    next_unsolved,
+    offer_next,
     parse_problem_list,
     problem_dir_for,
     repo_root,
@@ -159,6 +162,29 @@ def cmd_submit(args: argparse.Namespace) -> int:
         return 1
 
 
+def cmd_next(args: argparse.Namespace) -> int:
+    prob_dir = None
+    if args.target:
+        try:
+            prob_dir, _ = find_problem(args.target)
+        except CurlError as e:
+            print(f"error: {e}", file=sys.stderr)
+            return 1
+    else:
+        try:
+            prob_dir, _ = find_problem(None)
+        except CurlError:
+            prob_dir = None
+
+    rel_dir = next_unsolved(prob_dir)
+    if not rel_dir:
+        print("no unsolved problems found")
+        return 0
+
+    offer_next(rel_dir)
+    return 0
+
+
 def cmd_run(args: argparse.Namespace) -> int:
     try:
         path, source = find_problem(args.target)
@@ -279,6 +305,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="CSES option (default: C++17 or PyPy3)",
     )
     u.set_defaults(func=cmd_submit)
+
+    nxt = sub.add_parser("next", help="open the next unsolved problem")
+    nxt.add_argument(
+        "target",
+        nargs="?",
+        default=None,
+        help="slug, folder, or sol.py to start after (default: current problem folder)",
+    )
+    nxt.set_defaults(func=cmd_next)
 
     n = sub.add_parser("new", help="scaffold one problem folder")
     n.add_argument("category")

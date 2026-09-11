@@ -252,5 +252,58 @@ class DotenvTests(unittest.TestCase):
             self.assertEqual(os.environ.get("CSES_PASS"), "secret")
 
 
+class NextUnsolvedTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmp, ignore_errors=True)
+
+        p1 = os.path.join(self.tmp, "problems", "intro", "prob1")
+        p2 = os.path.join(self.tmp, "problems", "intro", "prob2")
+        os.makedirs(p1)
+        os.makedirs(p2)
+        with open(os.path.join(p1, "statement.md"), "w") as f:
+            f.write("# Prob 1\n**Link:** https://cses.fi/problemset/task/101\n**Verdict:** ACCEPTED\n")
+        with open(os.path.join(p2, "statement.md"), "w") as f:
+            f.write("# Prob 2\n**Link:** https://cses.fi/problemset/task/102\n")
+
+        self.tasks = [
+            {"id": "101", "name": "Prob 1", "slug": "prob1", "category": "intro", "url": "https://cses.fi/problemset/task/101"},
+            {"id": "102", "name": "Prob 2", "slug": "prob2", "category": "intro", "url": "https://cses.fi/problemset/task/102"},
+        ]
+        self.existing = {
+            "101": p1,
+            "102": p2,
+        }
+
+    def test_next_unsolved_from_none(self):
+        with patch.object(lib, "fetch", return_value=""), patch.object(
+            lib, "parse_problem_list", return_value=self.tasks
+        ), patch.object(lib, "existing_problems", return_value=self.existing), patch.object(
+            lib, "repo_root", return_value=self.tmp
+        ):
+            res = lib.next_unsolved(None)
+            self.assertEqual(res, os.path.relpath(self.existing["102"], self.tmp))
+
+    def test_next_unsolved_from_current(self):
+        with patch.object(lib, "fetch", return_value=""), patch.object(
+            lib, "parse_problem_list", return_value=self.tasks
+        ), patch.object(lib, "existing_problems", return_value=self.existing), patch.object(
+            lib, "repo_root", return_value=self.tmp
+        ):
+            res = lib.next_unsolved(self.existing["101"])
+            self.assertEqual(res, os.path.relpath(self.existing["102"], self.tmp))
+
+    def test_next_unsolved_all_accepted(self):
+        with open(os.path.join(self.existing["102"], "statement.md"), "w") as f:
+            f.write("# Prob 2\n**Link:** https://cses.fi/problemset/task/102\n**Verdict:** ACCEPTED\n")
+        with patch.object(lib, "fetch", return_value=""), patch.object(
+            lib, "parse_problem_list", return_value=self.tasks
+        ), patch.object(lib, "existing_problems", return_value=self.existing), patch.object(
+            lib, "repo_root", return_value=self.tmp
+        ):
+            res = lib.next_unsolved(None)
+            self.assertIsNone(res)
+
+
 if __name__ == "__main__":
     unittest.main()
