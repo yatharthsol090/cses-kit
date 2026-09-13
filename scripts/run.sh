@@ -86,10 +86,10 @@ for in in "${INPUTS[@]}"; do
   exp="$PROB/tests/$name.out"
 
   # Time the run (seconds, portable).
-  start=$(date +%s.%N)
+  start=$(python3 -c 'import time; print(time.perf_counter())')
   got="$("${RUN[@]}" < "$in" 2>/tmp/cses_stderr || true)"
-  end=$(date +%s.%N)
-  ms=$(printf "%.0f" "$(echo "($end - $start) * 1000" | bc)")
+  end=$(python3 -c 'import time; print(time.perf_counter())')
+  ms=$(python3 -c "print(round(($end - $start) * 1000))")
 
   if [[ ! -f "$exp" ]]; then
     echo "${YEL}? $name${RST}  (no expected output; got, ${ms}ms):"

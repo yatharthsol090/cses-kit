@@ -40,6 +40,38 @@ class RunShTests(unittest.TestCase):
         self.assertIn("expected", proc.stdout)
         self.assertIn("got", proc.stdout)
 
+    def test_run_without_bc(self):
+        with open(os.path.join(self.tmp, "sol.py"), "w") as f:
+            f.write("print(int(input()) * 2)\n")
+
+        with open(os.path.join(self.tmp, "tests", "1.in"), "w") as f:
+            f.write("21\n")
+
+        with open(os.path.join(self.tmp, "tests", "1.out"), "w") as f:
+            f.write("42\n")
+
+        fake_bin = os.path.join(self.tmp, "bin")
+        os.makedirs(fake_bin)
+
+        bc = os.path.join(fake_bin, "bc")
+        with open(bc, "w") as f:
+            f.write("#!/bin/sh\nexit 127\n")
+        os.chmod(bc, 0o755)
+
+        env = os.environ.copy()
+        env["PATH"] = fake_bin + os.pathsep + env["PATH"]
+
+        script = os.path.join(ROOT, "scripts", "run.sh")
+        proc = subprocess.run(
+            [script, os.path.join(self.tmp, "sol.py")],
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertIn("passed", proc.stdout)
+
     @unittest.skipUnless(shutil.which("g++"), "g++ not installed")
     def test_cpp_sample_pass(self):
         with open(os.path.join(self.tmp, "sol.cpp"), "w") as f:
