@@ -979,30 +979,34 @@ def record_verdict(prob_dir: str, verdict: str, submit_id: str, info: dict[str, 
     return line
 
 
-def next_unsolved(prob_dir: str) -> str | None:
+def next_unsolved(prob_dir: str | None = None) -> str | None:
     """Next unsolved problem in CSES list order (skips ones already ACCEPTED)."""
-    try:
-        here_id = task_id_from_problem_dir(prob_dir)
-    except CurlError:
-        return None
+    here_id = None
+    if prob_dir:
+        try:
+            here_id = task_id_from_problem_dir(prob_dir)
+        except Exception:
+            here_id = None
     try:
         tasks = parse_problem_list(fetch(LIST_URL, retries=1))
     except Exception:
         return None
     ids = [t["id"] for t in tasks]
-    try:
+    if here_id and here_id in ids:
         idx = ids.index(here_id)
-    except ValueError:
-        idx = -1
+        order = tasks[idx + 1 :] + tasks[: idx + 1]
+    else:
+        order = tasks
     by_id = existing_problems()
-    for t in tasks[idx + 1 :] + tasks[: idx + 1]:
-        if t["id"] == here_id:
+    for t in order:
+        if here_id and t["id"] == here_id:
             continue
         path = by_id.get(t["id"])
         if not path:
             continue
         try:
-            text = open(os.path.join(path, "statement.md"), encoding="utf-8", errors="replace").read()
+            with open(os.path.join(path, "statement.md"), encoding="utf-8", errors="replace") as f:
+                text = f.read()
         except OSError:
             text = ""
         if re.search(r"\*\*Verdict:\*\*.*ACCEPTED", text, flags=re.I):

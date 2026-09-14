@@ -24,7 +24,7 @@ class CliTests(unittest.TestCase):
             text=True,
         )
         self.assertEqual(proc.returncode, 0)
-        for cmd in ("sync", "run", "submit", "login", "new", "fetch"):
+        for cmd in ("sync", "run", "submit", "login", "new", "fetch", "next"):
             self.assertIn(cmd, proc.stdout)
 
     def test_missing_subcommand_fails(self):
@@ -52,6 +52,32 @@ class CliTests(unittest.TestCase):
         self.assertIsNone(args.target)
         args = p.parse_args(["submit", "trailing-zeroes/sol.py"])
         self.assertEqual(args.target, "trailing-zeroes/sol.py")
+
+    def test_parser_next_optional_target(self):
+        p = cses_cli.build_parser()
+        args = p.parse_args(["next"])
+        self.assertIsNone(args.target)
+        args = p.parse_args(["next", "trailing-zeroes"])
+        self.assertEqual(args.target, "trailing-zeroes")
+
+    def test_cmd_next_calls_offer_next(self):
+        with patch.object(cses_cli, "find_problem", return_value=("/path/to/prob", None)), patch.object(
+            cses_cli, "next_unsolved", return_value="problems/intro/missing-number"
+        ), patch.object(cses_cli, "offer_next") as mock_offer:
+            ns = argparse.Namespace(target="some-target")
+            rc = cses_cli.cmd_next(ns)
+            self.assertEqual(rc, 0)
+            mock_offer.assert_called_once_with("problems/intro/missing-number")
+
+    def test_cmd_next_no_unsolved(self):
+        buf = __import__("io").StringIO()
+        with patch.object(cses_cli, "find_problem", return_value=("/path/to/prob", None)), patch.object(
+            cses_cli, "next_unsolved", return_value=None
+        ), patch("sys.stdout", buf):
+            ns = argparse.Namespace(target=None)
+            rc = cses_cli.cmd_next(ns)
+            self.assertEqual(rc, 0)
+            self.assertIn("no unsolved", buf.getvalue())
 
     def test_cmd_new_without_url(self):
         tmp = tempfile.mkdtemp()

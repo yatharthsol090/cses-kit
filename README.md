@@ -62,6 +62,9 @@ cses run -i                            # in a problem folder; type input
 cses submit trailing-zeroes
 cses submit trailing-zeroes/sol.py
 
+cses next                              # open next unsolved problem
+cses next trailing-zeroes              # open next unsolved after this problem
+
 cses login
 cses whoami
 cses install
