@@ -39,6 +39,19 @@ Put that `export` in `~/.zshrc` so it sticks. Until `cses` is on `PATH`, use
 
 `.env` (gitignored):
 
+
+### Auth
+
+Prefer a browser session cookie (no password is stored):
+
+1. Log into https://cses.fi in your browser.
+2. Open DevTools -> Application -> Cookies -> `https://cses.fi`, copy `PHPSESSID`.
+3. `cses login --session <PHPSESSID>` (or set `CSES_PHPSESSID` in `.env`).
+4. `cses logout` clears the stored jar.
+
+`CSES_NICK` / `CSES_PASS` password auto-login is deprecated and only used
+when `CSES_ALLOW_PASSWORD_LOGIN=1`.
+
 ```
 CSES_NICK=your_username
 CSES_PASS=your_password
