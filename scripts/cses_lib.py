@@ -1214,3 +1214,83 @@ def submit_solution(
     if nxt:
         offer_next(nxt)
     return 0 if ok else 1
+
+# ---------------------------------------------------------------------------
+# Session cookie auth (no password)
+# ---------------------------------------------------------------------------
+
+CSES_DOMAIN = "cses.fi"
+CSES_COOKIE_NAME = "PHPSESSID"
+
+
+def write_cookie_jar(phpsessid: str, cookie_file: str | None = None) -> str:
+    """Write a Netscape-format cookie jar containing just PHPSESSID."""
+    value = (phpsessid or "").strip()
+    if not value:
+        raise CurlError("empty session id")
+    if any(c in value for c in "\r\n\t ;"):
+        raise CurlError("session id contains invalid characters")
+    path = cookie_file or cookie_path()
+    os.makedirs(os.path.dirname(path), mode=0o700, exist_ok=True)
+    expires = int(time.time()) + 30 * 24 * 3600
+    line = "\t".join(
+        [
+            CSES_DOMAIN,
+            "TRUE",
+            "/",
+            "TRUE",
+            str(expires),
+            CSES_COOKIE_NAME,
+            value,
+        ]
+    )
+    header = (
+        "# Netscape HTTP Cookie File\n"
+        "# Written by cses-kit. Do not commit.\n"
+    )
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(header)
+            f.write(line + "\n")
+    finally:
+        try:
+            os.chmod(path, 0o600)
+        except OSError:
+            pass
+    return path
+
+
+def clear_session(cookie_file: str | None = None) -> bool:
+    """Delete the cookie jar. Returns True if a file was removed."""
+    path = cookie_file or cookie_path()
+    try:
+        os.remove(path)
+        return True
+    except FileNotFoundError:
+        return False
+    except OSError as e:
+        raise CurlError(f"could not remove {path}: {e}")
+
+
+def env_session_id() -> str:
+    load_dotenv()
+    return (os.environ.get("CSES_PHPSESSID") or "").strip()
+
+
+def warn_password_deprecated() -> bool:
+    """Print a one-line deprecation notice if CSES_PASS is set and unused.
+
+    Returns True if the warning was printed.
+    """
+    _, password = env_credentials()
+    if not password:
+        return False
+    if not sys.stderr.isatty():
+        return False
+    print(
+        "warning: CSES_PASS is deprecated and will be ignored once a session "
+        "cookie exists. Prefer CSES_PHPSESSID or `cses login --session`.",
+        file=sys.stderr,
+    )
+    return True

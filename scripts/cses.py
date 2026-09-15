@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """CSES local workflow: sync the problem set, log in, and submit.
 
 Usage:
@@ -55,7 +55,7 @@ def cmd_fetch(args: argparse.Namespace) -> int:
 
 
 def cmd_sync(args: argparse.Namespace) -> int:
-    print("listing CSES problem set …", flush=True)
+    print("listing CSES problem set â€¦", flush=True)
     try:
         page = fetch(LIST_URL)
     except Exception as e:  # noqa: BLE001
@@ -142,7 +142,7 @@ def cmd_login(_args: argparse.Namespace) -> int:
 def cmd_whoami(_args: argparse.Namespace) -> int:
     name = whoami()
     if not name:
-        print("not logged in — set CSES_NICK and CSES_PASS in .env, or run: cses login")
+        print("not logged in â€” set CSES_NICK and CSES_PASS in .env, or run: cses login")
         return 1
     print(name)
     return 0
@@ -182,7 +182,7 @@ def cmd_new(args: argparse.Namespace) -> int:
         try:
             title, n = fetch_problem(args.url, dest)
         except Exception as e:  # noqa: BLE001
-            print(f"warning: fetch failed ({e}) — blank statement", file=sys.stderr)
+            print(f"warning: fetch failed ({e}) â€” blank statement", file=sys.stderr)
         else:
             extra = f"{n} sample(s)" if n else "no samples"
             print(f"created {dest}  {title}  ({extra})")
@@ -304,3 +304,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+
