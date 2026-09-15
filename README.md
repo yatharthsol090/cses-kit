@@ -1,4 +1,4 @@
-# CSES kit
+﻿# CSES kit
 
 Unofficial CLI to fetch [CSES](https://cses.fi/problemset/) statements, test a
 solution locally, and submit from the terminal. Not affiliated with CSES, and
@@ -50,7 +50,7 @@ with Apple clang.
 ## Commands
 
 ```bash
-cses sync                              # all public tasks → problems/
+cses sync                              # all public tasks â†’ problems/
 cses sync --category introductory      # one section
 cses new introductory missing-number https://cses.fi/problemset/task/1083
 cses fetch <url> <problem-dir>         # refresh one statement + samples
@@ -90,7 +90,7 @@ Local `cses run` failures use the same card layout. Samples are the public
 examples only; hidden tests appear after submit, and only if CSES shows them.
 
 In VS Code / Cursor, open `sol.cpp`, `sol.py`, or `sol.js` and press **Cmd+Shift+B**, or
-**Run Task → CSES: submit current problem**.
+**Run Task â†’ CSES: submit current problem**.
 
 ## Testing notes
 
@@ -119,4 +119,5 @@ delay (or gentler) on bulk fetches.
 
 ## License
 
-MIT for this tooling. CSES content remains © its authors; fetch it yourself.
+MIT for this tooling. CSES content remains Â© its authors; fetch it yourself.
+
