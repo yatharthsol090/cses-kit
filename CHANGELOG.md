@@ -16,6 +16,19 @@ the command surface stable.
 ## [Unreleased]
 
 ### Added
+- `cses login --session PHPSESSID` to import a browser session cookie (no password stored).
+- `cses logout` to clear the stored cookie jar.
+- `CSES_PHPSESSID` environment variable support.
+
+### Changed
+- Session cookie is now the documented default auth method.
+- `ensure_session` tries the cookie jar first, then `CSES_PHPSESSID`, then (opt-in) password login.
+
+### Deprecated
+- `CSES_NICK` / `CSES_PASS` password auto-login is now gated behind `CSES_ALLOW_PASSWORD_LOGIN`.
+
+
+### Added
 
 - `cses status` — solved vs remaining per category (`--unsolved`, `--category`, `--json`) ([#10](https://github.com/yatharthsol090/cses-kit/pull/10))
 

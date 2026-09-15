@@ -37,12 +37,17 @@ export PATH="$HOME/.local/bin:$PATH"
 Put that `export` in `~/.zshrc` so it sticks. Until `cses` is on `PATH`, use
 `./cses` from the repo root.
 
-`.env` (gitignored):
+### Auth
 
-```
-CSES_NICK=your_username
-CSES_PASS=your_password
-```
+Prefer a browser session cookie (no password is stored):
+
+1. Log into https://cses.fi in your browser.
+2. Open DevTools -> Application -> Cookies -> `https://cses.fi`, copy `PHPSESSID`.
+3. `cses login --session <PHPSESSID>` (or set `CSES_PHPSESSID` in `.env`).
+4. `cses logout` clears the stored jar.
+
+`CSES_NICK` / `CSES_PASS` password auto-login is deprecated and only used
+when `CSES_ALLOW_PASSWORD_LOGIN=1`.
 
 On macOS, `include/bits/stdc++.h` is a shim so `#include <bits/stdc++.h>` works
 with Apple clang.
@@ -50,7 +55,7 @@ with Apple clang.
 ## Commands
 
 ```bash
-cses sync                              # all public tasks → problems/
+cses sync                              # all public tasks â†’ problems/
 cses sync --category introductory      # one section
 cses new introductory missing-number https://cses.fi/problemset/task/1083
 cses fetch <url> <problem-dir>         # refresh one statement + samples
@@ -94,7 +99,7 @@ Local `cses run` failures use the same card layout. Samples are the public
 examples only; hidden tests appear after submit, and only if CSES shows them.
 
 In VS Code / Cursor, open `sol.cpp`, `sol.py`, or `sol.js` and press **Cmd+Shift+B**, or
-**Run Task → CSES: submit current problem**.
+**Run Task â†’ CSES: submit current problem**.
 
 ## Testing notes
 
@@ -131,4 +136,5 @@ delay (or gentler) on bulk fetches.
 
 ## License
 
-MIT for this tooling. CSES content remains © its authors; fetch it yourself.
+MIT for this tooling. CSES content remains Â© its authors; fetch it yourself.
+

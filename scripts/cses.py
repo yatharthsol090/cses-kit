@@ -25,6 +25,8 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from cses_lib import (
+    clear_session,
+    write_cookie_jar,
     CurlError,
     celebrate as do_celebrate,
     collect_status,
@@ -60,7 +62,7 @@ def cmd_fetch(args: argparse.Namespace) -> int:
 
 
 def cmd_sync(args: argparse.Namespace) -> int:
-    print("listing CSES problem set …", flush=True)
+    print("listing CSES problem set â€¦", flush=True)
     try:
         page = fetch(LIST_URL)
     except Exception as e:  # noqa: BLE001
@@ -125,18 +127,33 @@ def cmd_sync(args: argparse.Namespace) -> int:
     return 1 if failed else 0
 
 
-def cmd_login(_args: argparse.Namespace) -> int:
+def cmd_login(args: argparse.Namespace) -> int:
+    sid = getattr(args, "session", None)
+    if sid:
+        try:
+            write_cookie_jar(sid)
+            name = whoami()
+        except Exception as e:
+            print(f"error: {e}", file=sys.stderr)
+            return 1
+        if not name:
+            clear_session()
+            print("error: session id did not authenticate; check PHPSESSID", file=sys.stderr)
+            return 1
+        print(f"logged in as {name} (via session cookie)")
+        return 0
+
     nick, password = env_credentials()
     if not nick:
         nick = input("CSES username: ").strip()
     if not password:
         password = getpass.getpass("CSES password: ")
     if not nick or not password:
-        print("error: set CSES_NICK and CSES_PASS in .env, or type them at the prompt", file=sys.stderr)
+        print("error: pass --session <PHPSESSID>, or set CSES_NICK/CSES_PASS", file=sys.stderr)
         return 2
     try:
         name = do_login(nick, password)
-    except Exception as e:  # noqa: BLE001
+    except ception as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
     print(f"logged in as {name}")
@@ -144,10 +161,18 @@ def cmd_login(_args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_logout(_args: argparse.Namespace) -> int:
+    if clear_session():
+        print("session cleared")
+    else:
+        print("no session to clear")
+    return 0
+
+
 def cmd_whoami(_args: argparse.Namespace) -> int:
     name = whoami()
     if not name:
-        print("not logged in — set CSES_NICK and CSES_PASS in .env, or run: cses login")
+        print("not logged in — run: cses login --session <PHPSESSID> (or set CSES_PHPSESSID)")
         return 1
     print(name)
     return 0
@@ -187,7 +212,7 @@ def cmd_new(args: argparse.Namespace) -> int:
         try:
             title, n = fetch_problem(args.url, dest)
         except Exception as e:  # noqa: BLE001
-            print(f"warning: fetch failed ({e}) — blank statement", file=sys.stderr)
+            print(f"warning: fetch failed ({e}) â€” blank statement", file=sys.stderr)
         else:
             extra = f"{n} sample(s)" if n else "no samples"
             print(f"created {dest}  {title}  ({extra})")
@@ -305,7 +330,12 @@ def build_parser() -> argparse.ArgumentParser:
     s.set_defaults(func=cmd_sync)
 
     l = sub.add_parser("login", help="save a CSES session cookie (gitignored)")
+    l.add_argument("--session", metavar="PHPSESSID", default=None,
+                   help="import a browser PHPSESSID cookie instead of a password")
     l.set_defaults(func=cmd_login)
+
+    lo = sub.add_parser("logout", help="clear the stored CSES session cookie")
+    lo.set_defaults(func=cmd_logout)
 
     w = sub.add_parser("whoami", help="show the saved CSES username")
     w.set_defaults(func=cmd_whoami)
@@ -362,3 +392,5 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+
+

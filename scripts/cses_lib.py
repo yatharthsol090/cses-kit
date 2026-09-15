@@ -98,18 +98,49 @@ def env_credentials() -> tuple[str, str]:
 
 
 def ensure_session(cookie_file: str | None = None) -> str:
-    """Return the logged-in username, logging in from .env if needed."""
+    """Return the logged-in username, preferring a session cookie.
+
+    Order of precedence:
+      1. Existing cookie jar that still authenticates.
+      2. CSES_PHPSESSID env var -> write/refresh jar, then verify.
+      3. Password auto-login, only if CSES_ALLOW_PASSWORD_LOGIN is truthy.
+    """
     cookie_file = cookie_file or cookie_path()
+
+    # 1. Existing jar
     name = whoami(cookie_file)
     if name:
+        if env_credentials()[1]:
+            warn_password_deprecated()
         return name
-    nick, password = env_credentials()
-    if not nick or not password:
+
+    # 2. CSES_PHPSESSID -> write jar, then verify
+    sid = env_session_id()
+    if sid:
+        write_cookie_jar(sid, cookie_file=cookie_file)
+        name = whoami(cookie_file)
+        if name:
+            if env_credentials()[1]:
+                warn_password_deprecated()
+            return name
+        clear_session(cookie_file=cookie_file)
         raise CurlError(
-            "not logged in — set CSES_NICK and CSES_PASS in .env, or run: cses login"
+            "CSES_PHPSESSID is invalid or expired; "
+            "re-run: cses login --session <PHPSESSID>"
         )
-    print("logging in from .env …", flush=True)
-    return login(nick, password, cookie_file=cookie_file)
+
+    # 3. Password auto-login (deprecated, opt-in)
+    allow = (os.environ.get("CSES_ALLOW_PASSWORD_LOGIN") or "").strip().lower()
+    nick, password = env_credentials()
+    if allow in ("1", "true", "yes") and nick and password:
+        print("logging in from .env (CSES_ALLOW_PASSWORD_LOGIN) ...", flush=True)
+        return login(nick, password, cookie_file=cookie_file)
+
+    raise CurlError(
+        "not logged in -- run: cses login --session <PHPSESSID> "
+        "(or set CSES_PHPSESSID). "
+        "Password auto-login is deprecated; set CSES_ALLOW_PASSWORD_LOGIN=1 to allow it."
+    )
 
 
 def template_cpp() -> str:
@@ -328,7 +359,7 @@ def parse_statement(page: str, url: str) -> tuple[str, str, list[tuple[str, str]
     limits_html = slice_between(page, r'<ul class="task-constraints">', "</ul>")
     items = re.findall(r"<li>(.*?)</li>", limits_html, flags=re.S)
     items = [html.unescape(re.sub(r"<[^>]+>", "", it)).strip() for it in items]
-    limits = " · ".join(it for it in items if it)
+    limits = " Â· ".join(it for it in items if it)
     md_div = slice_between(page, r'<div class="md">', "</div>")
     body = md_from_div(md_div) if md_div else "_Could not parse statement automatically._\n"
     header = f"# {title}\n\n**Link:** {url}\n"
@@ -369,7 +400,7 @@ def fetch_problem(url: str, out_dir: str) -> tuple[str, int]:
 
 def slugify_problem(title: str) -> str:
     s = html.unescape(title).lower()
-    s = s.replace("'", "").replace("’", "")
+    s = s.replace("'", "").replace("â€™", "")
     s = re.sub(r"[^a-z0-9]+", "-", s)
     return s.strip("-") or "problem"
 
@@ -581,7 +612,7 @@ def find_problem(spec: str | None) -> tuple[str, str | None]:
         d = problem_from_cwd()
         if not d:
             raise CurlError(
-                "not in a problem folder — pass a slug (trailing-zeroes) or a path"
+                "not in a problem folder â€” pass a slug (trailing-zeroes) or a path"
             )
         return d, None
 
@@ -611,7 +642,7 @@ def find_problem(spec: str | None) -> tuple[str, str | None]:
         d = problem_from_cwd()
         if not d:
             raise CurlError(
-                "not in a problem folder — pass a slug (trailing-zeroes) or a path"
+                "not in a problem folder â€” pass a slug (trailing-zeroes) or a path"
             )
         src = os.path.join(d, file_hint)
         if not os.path.isfile(src):
@@ -720,7 +751,7 @@ def login(nick: str, password: str, cookie_file: str | None = None) -> str:
     )
     name = account_name(body) or whoami(cookie_file)
     if not name:
-        raise CurlError("login failed — check username/password")
+        raise CurlError("login failed â€” check username/password")
     if code >= 400:
         raise CurlError(f"login HTTP {code} ({final})")
     return name
@@ -733,7 +764,7 @@ def task_id_from_problem_dir(prob_dir: str) -> str:
         if tid:
             return tid
     raise CurlError(
-        f"no CSES task id in {stmt} — fetch the statement first "
+        f"no CSES task id in {stmt} â€” fetch the statement first "
         f"(cses fetch <url> {prob_dir})"
     )
 
@@ -877,10 +908,10 @@ LAST_SUBMIT = "last-submit.txt"
 def _clip(text: str, max_lines: int = 40, max_chars: int = 2500) -> str:
     text = text.replace("\r\n", "\n")
     if len(text) > max_chars:
-        text = text[:max_chars].rstrip() + "\n… (truncated)\n"
+        text = text[:max_chars].rstrip() + "\nâ€¦ (truncated)\n"
     lines = text.splitlines()
     if len(lines) > max_lines:
-        text = "\n".join(lines[:max_lines]) + "\n… (truncated)\n"
+        text = "\n".join(lines[:max_lines]) + "\nâ€¦ (truncated)\n"
     return text
 
 
@@ -1037,7 +1068,7 @@ def write_submit_report(
 def derive_verdict(info: dict[str, str | list[str]], status: str) -> str:
     result = str(info.get("Result") or "").strip()
     if result:
-        # "ACCEPTED" or "WRONG ANSWER" etc. — ignore surrounding noise.
+        # "ACCEPTED" or "WRONG ANSWER" etc. â€” ignore surrounding noise.
         up = result.upper()
         for label in (
             "ACCEPTED",
@@ -1091,7 +1122,7 @@ def record_verdict(prob_dir: str, verdict: str, submit_id: str, info: dict[str, 
     if when:
         bits.append(when)
     bits.append(f"[submission {submit_id}]({url})")
-    line = "**Verdict:** " + " · ".join(bits)
+    line = "**Verdict:** " + " Â· ".join(bits)
     stmt = os.path.join(prob_dir, "statement.md")
     try:
         text = open(stmt, encoding="utf-8", errors="replace").read()
@@ -1232,7 +1263,7 @@ def submit_solution(
     if os.path.getsize(sol) > 128 * 1024:
         raise CurlError("source is over CSES's 128 kB limit")
     if sol_looks_like_template(sol):
-        raise CurlError(f"{sol} still looks like the empty template — refusing to submit")
+        raise CurlError(f"{sol} still looks like the empty template â€” refusing to submit")
 
     nick = ensure_session(cookie_file)
 
@@ -1245,7 +1276,7 @@ def submit_solution(
         page = fetch(f"{BASE}/problemset/task/{task}", cookie_file=cookie_file)
         csrf = extract_csrf(page)
     if not csrf:
-        raise CurlError("could not find csrf_token — try: cses login")
+        raise CurlError("could not find csrf_token â€” try: cses login")
 
     print(f"submitting {sol}", flush=True)
     print(f"  user   {nick}", flush=True)
@@ -1338,3 +1369,84 @@ def submit_solution(
     if nxt:
         offer_next(nxt)
     return 0 if ok else 1
+
+# ---------------------------------------------------------------------------
+# Session cookie auth (no password)
+# ---------------------------------------------------------------------------
+
+CSES_DOMAIN = "cses.fi"
+CSES_COOKIE_NAME = "PHPSESSID"
+
+
+def write_cookie_jar(phpsessid: str, cookie_file: str | None = None) -> str:
+    """Write a Netscape-format cookie jar containing just PHPSESSID."""
+    value = (phpsessid or "").strip()
+    if not value:
+        raise CurlError("empty session id")
+    if any(c in value for c in "\r\n\t ;"):
+        raise CurlError("session id contains invalid characters")
+    path = cookie_file or cookie_path()
+    os.makedirs(os.path.dirname(path), mode=0o700, exist_ok=True)
+    expires = int(time.time()) + 30 * 24 * 3600
+    line = "\t".join(
+        [
+            CSES_DOMAIN,
+            "TRUE",
+            "/",
+            "TRUE",
+            str(expires),
+            CSES_COOKIE_NAME,
+            value,
+        ]
+    )
+    header = (
+        "# Netscape HTTP Cookie File\n"
+        "# Written by cses-kit. Do not commit.\n"
+    )
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(header)
+            f.write(line + "\n")
+    finally:
+        try:
+            os.chmod(path, 0o600)
+        except OSError:
+            pass
+    return path
+
+
+def clear_session(cookie_file: str | None = None) -> bool:
+    """Delete the cookie jar. Returns True if a file was removed."""
+    path = cookie_file or cookie_path()
+    try:
+        os.remove(path)
+        return True
+    except FileNotFoundError:
+        return False
+    except OSError as e:
+        raise CurlError(f"could not remove {path}: {e}")
+
+
+def env_session_id() -> str:
+    load_dotenv()
+    return (os.environ.get("CSES_PHPSESSID") or "").strip()
+
+
+def warn_password_deprecated() -> bool:
+    """Print a one-line deprecation notice if CSES_PASS is set and unused.
+
+    Returns True if the warning was printed.
+    """
+    _, password = env_credentials()
+    if not password:
+        return False
+    if not sys.stderr.isatty():
+        return False
+    print(
+        "warning: CSES_PASS is deprecated and will be ignored once a session "
+        "cookie exists. Prefer CSES_PHPSESSID or `cses login --session`.",
+        file=sys.stderr,
+    )
+    return True
+
