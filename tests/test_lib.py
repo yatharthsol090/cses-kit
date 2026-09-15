@@ -293,5 +293,83 @@ class DotenvTests(unittest.TestCase):
             self.assertEqual(os.environ.get("CSES_PASS"), "secret")
 
 
+class StatusTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.tmp, ignore_errors=True)
+
+    def _create_problem(self, category: str, slug: str, verdict: str | None = None):
+        prob_dir = os.path.join(self.tmp, "problems", category, slug)
+        os.makedirs(prob_dir, exist_ok=True)
+        stmt = os.path.join(prob_dir, "statement.md")
+        content = f"# {slug}\n\n**Link:** https://cses.fi/problemset/task/100\n"
+        if verdict:
+            content += f"\n**Verdict:** {verdict}\n"
+        with open(stmt, "w", encoding="utf-8") as f:
+            f.write(content)
+        return prob_dir
+
+    def test_collect_status_empty(self):
+        stats = lib.collect_status(base_dir=os.path.join(self.tmp, "problems"))
+        self.assertEqual(stats, {})
+        report = lib.format_status_report(stats)
+        self.assertIn("no problems found", report)
+
+    def test_collect_status_counts(self):
+        self._create_problem("introductory", "weird-algorithm", "ACCEPTED")
+        self._create_problem("introductory", "missing-number", None)
+        self._create_problem("introductory", "repetitions", "WRONG ANSWER")
+        self._create_problem(
+            "sorting_and_searching", "distinct-numbers", "ACCEPTED · 10/10"
+        )
+        self._create_problem(
+            "sorting_and_searching", "apartments", "TIME LIMIT EXCEEDED"
+        )
+
+        stats = lib.collect_status(base_dir=os.path.join(self.tmp, "problems"))
+        self.assertIn("introductory", stats)
+        self.assertIn("sorting_and_searching", stats)
+
+        self.assertEqual(stats["introductory"]["solved"], ["weird-algorithm"])
+        self.assertEqual(
+            stats["introductory"]["unsolved"], ["missing-number", "repetitions"]
+        )
+        self.assertEqual(stats["sorting_and_searching"]["solved"], ["distinct-numbers"])
+        self.assertEqual(stats["sorting_and_searching"]["unsolved"], ["apartments"])
+
+    def test_collect_status_category_filter(self):
+        self._create_problem("introductory", "weird-algorithm", "ACCEPTED")
+        self._create_problem("sorting_and_searching", "distinct-numbers", "ACCEPTED")
+
+        stats = lib.collect_status(
+            base_dir=os.path.join(self.tmp, "problems"), category="introductory"
+        )
+        self.assertEqual(list(stats.keys()), ["introductory"])
+
+        stats_hyphen = lib.collect_status(
+            base_dir=os.path.join(self.tmp, "problems"),
+            category="sorting-and-searching",
+        )
+        self.assertEqual(list(stats_hyphen.keys()), ["sorting_and_searching"])
+
+    def test_format_status_report_output(self):
+        self._create_problem("introductory", "weird-algorithm", "ACCEPTED")
+        self._create_problem("introductory", "missing-number", None)
+        stats = lib.collect_status(base_dir=os.path.join(self.tmp, "problems"))
+
+        report = lib.format_status_report(stats, show_unsolved=False, use_color=False)
+        self.assertIn("Category", report)
+        self.assertIn("introductory", report)
+        self.assertIn("1 / 2", report)
+        self.assertIn("50.0%", report)
+        self.assertIn("Total", report)
+        self.assertNotIn("missing-number", report)
+
+        report_unsolved = lib.format_status_report(
+            stats, show_unsolved=True, use_color=False
+        )
+        self.assertIn("- missing-number", report_unsolved)
+
+
 if __name__ == "__main__":
     unittest.main()

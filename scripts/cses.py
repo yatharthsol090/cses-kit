@@ -9,8 +9,10 @@ Usage:
     cses submit [slug|path]
     cses fetch <cses-task-url> <problem-dir>
     cses new <category> <slug> [url]
+    cses status [--category CAT] [-u|--unsolved] [--json]
     cses install
     cses celebrate
+    cses version
 """
 from __future__ import annotations
 
@@ -25,15 +27,18 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from cses_lib import (
     CurlError,
     celebrate as do_celebrate,
+    collect_status,
     existing_problems,
     ensure_sol_cpp,
     env_credentials,
     fetch,
     fetch_problem,
     find_problem,
+    format_status_report,
     LIST_URL,
     load_dotenv,
     login as do_login,
+    package_version,
     parse_problem_list,
     problem_dir_for,
     repo_root,
@@ -218,8 +223,32 @@ def cmd_install(_args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_status(args: argparse.Namespace) -> int:
+    stats = collect_status(category=args.category)
+    if args.json:
+        import json
+
+        payload = {
+            "categories": stats,
+            "total_solved": sum(len(d["solved"]) for d in stats.values()),
+            "total_problems": sum(
+                len(d["solved"]) + len(d["unsolved"]) for d in stats.values()
+            ),
+        }
+        print(json.dumps(payload, indent=2))
+        return 0
+
+    print(format_status_report(stats, show_unsolved=args.unsolved))
+    return 0
+
+
 def cmd_celebrate(args: argparse.Namespace) -> int:
     do_celebrate(args.title, args.score)
+    return 0
+
+
+def cmd_version(_args: argparse.Namespace) -> int:
+    print(f"cses-kit {package_version()}")
     return 0
 
 
@@ -228,7 +257,33 @@ def build_parser() -> argparse.ArgumentParser:
         prog="cses",
         description="Sync CSES problems locally, log in, run samples, and submit.",
     )
+    p.add_argument(
+        "-V",
+        "--version",
+        action="version",
+        version=f"cses-kit {package_version()}",
+    )
     sub = p.add_subparsers(dest="cmd", required=True)
+
+    st = sub.add_parser("status", help="show solved vs remaining problems per category")
+    st.add_argument(
+        "--category",
+        "-c",
+        default=None,
+        help="only this category (e.g. introductory)",
+    )
+    st.add_argument(
+        "-u",
+        "--unsolved",
+        action="store_true",
+        help="list unsolved problem slugs under each category",
+    )
+    st.add_argument(
+        "--json",
+        action="store_true",
+        help="output status in JSON format",
+    )
+    st.set_defaults(func=cmd_status)
 
     f = sub.add_parser("fetch", help="fetch one problem's statement + sample tests")
     f.add_argument("url")
@@ -293,6 +348,9 @@ def build_parser() -> argparse.ArgumentParser:
     c.add_argument("--title", default="Trailing Zeros")
     c.add_argument("--score", default="13/13")
     c.set_defaults(func=cmd_celebrate)
+
+    v = sub.add_parser("version", help="print the cses-kit version")
+    v.set_defaults(func=cmd_version)
     return p
 
 

@@ -24,7 +24,7 @@ class CliTests(unittest.TestCase):
             text=True,
         )
         self.assertEqual(proc.returncode, 0)
-        for cmd in ("sync", "run", "submit", "login", "new", "fetch"):
+        for cmd in ("sync", "run", "submit", "login", "new", "fetch", "status", "version"):
             self.assertIn(cmd, proc.stdout)
 
     def test_missing_subcommand_fails(self):
@@ -69,3 +69,50 @@ class CliTests(unittest.TestCase):
             self.assertTrue(os.path.isfile(os.path.join(dest, "statement.md")))
             rc = cses_cli.cmd_new(ns)
             self.assertEqual(rc, 2)
+
+    def test_parser_status_arguments(self):
+        p = cses_cli.build_parser()
+        args = p.parse_args(["status"])
+        self.assertIsNone(args.category)
+        self.assertFalse(args.unsolved)
+        self.assertFalse(args.json)
+
+        args = p.parse_args(["status", "-c", "introductory", "-u", "--json"])
+        self.assertEqual(args.category, "introductory")
+        self.assertTrue(args.unsolved)
+        self.assertTrue(args.json)
+
+    def test_cmd_status_empty(self):
+        tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tmp, ignore_errors=True)
+        ns = argparse.Namespace(category=None, unsolved=False, json=False)
+        buf = __import__("io").StringIO()
+        with patch.object(lib, "repo_root", return_value=tmp), patch.object(
+            cses_cli, "repo_root", return_value=tmp
+        ), patch("sys.stdout", buf):
+            rc = cses_cli.cmd_status(ns)
+            self.assertEqual(rc, 0)
+            self.assertIn("no problems found", buf.getvalue())
+
+    def test_cmd_status_with_problems_and_json(self):
+        tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tmp, ignore_errors=True)
+        prob = os.path.join(tmp, "problems", "introductory", "weird-algorithm")
+        os.makedirs(prob)
+        with open(os.path.join(prob, "statement.md"), "w", encoding="utf-8") as f:
+            f.write("# Weird Algorithm\n\n**Verdict:** ACCEPTED\n")
+
+        buf = __import__("io").StringIO()
+        ns = argparse.Namespace(category=None, unsolved=False, json=True)
+        with patch.object(lib, "repo_root", return_value=tmp), patch.object(
+            cses_cli, "repo_root", return_value=tmp
+        ), patch("sys.stdout", buf):
+            rc = cses_cli.cmd_status(ns)
+            self.assertEqual(rc, 0)
+            import json
+
+            data = json.loads(buf.getvalue())
+            self.assertEqual(data["total_solved"], 1)
+            self.assertEqual(data["total_problems"], 1)
+            self.assertIn("introductory", data["categories"])
+

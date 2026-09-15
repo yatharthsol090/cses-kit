@@ -40,6 +40,17 @@ def repo_root() -> str:
     return os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 
+def package_version(root: str | None = None) -> str:
+    """Version string from the repo-root VERSION file (e.g. 0.1.0)."""
+    path = os.path.join(root or repo_root(), "VERSION")
+    try:
+        with open(path, encoding="utf-8") as f:
+            ver = f.read().strip()
+    except OSError:
+        return "0.0.0"
+    return ver or "0.0.0"
+
+
 def cookie_path() -> str:
     d = os.path.join(repo_root(), ".cses")
     os.makedirs(d, mode=0o700, exist_ok=True)
@@ -420,8 +431,8 @@ def existing_problems() -> dict[str, str]:
     return found
 
 
-def iter_problem_dirs() -> list[str]:
-    root = os.path.join(repo_root(), "problems")
+def iter_problem_dirs(root: str | None = None) -> list[str]:
+    root = root or os.path.join(repo_root(), "problems")
     out: list[str] = []
     if not os.path.isdir(root):
         return out
@@ -430,6 +441,119 @@ def iter_problem_dirs() -> list[str]:
         if "statement.md" in filenames:
             out.append(dirpath)
     return out
+
+
+def collect_status(
+    base_dir: str | None = None, category: str | None = None
+) -> dict[str, dict[str, list[str]]]:
+    """Walk problems/ and group solved/unsolved problem slugs by category.
+
+    Skip folders with no statement.md. A problem is solved if its statement.md
+    contains a '**Verdict:** ... ACCEPTED' line.
+
+    Returns:
+        dict mapping category -> {
+            "solved": [slug, ...],
+            "unsolved": [slug, ...],
+        }
+    """
+    root = base_dir or os.path.join(repo_root(), "problems")
+    if not os.path.isdir(root):
+        return {}
+
+    target_cat = category.replace("-", "_").lower() if category else None
+    result: dict[str, dict[str, list[str]]] = {}
+
+    for dirpath in iter_problem_dirs(root):
+        rel = os.path.relpath(dirpath, root)
+        parts = rel.split(os.sep)
+        if len(parts) >= 2:
+            cat = parts[0]
+            slug = parts[-1]
+        else:
+            cat = "misc"
+            slug = parts[0]
+
+        if target_cat and cat.replace("-", "_").lower() != target_cat:
+            continue
+
+        stmt = os.path.join(dirpath, "statement.md")
+        try:
+            with open(stmt, encoding="utf-8", errors="replace") as f:
+                text = f.read()
+        except OSError:
+            continue
+
+        if cat not in result:
+            result[cat] = {"solved": [], "unsolved": []}
+
+        if re.search(r"\*\*Verdict:\*\*.*ACCEPTED", text, flags=re.I):
+            result[cat]["solved"].append(slug)
+        else:
+            result[cat]["unsolved"].append(slug)
+
+    for cat in result:
+        result[cat]["solved"].sort()
+        result[cat]["unsolved"].sort()
+
+    return dict(sorted(result.items()))
+
+
+def format_status_report(
+    stats: dict[str, dict[str, list[str]]],
+    show_unsolved: bool = False,
+    use_color: bool | None = None,
+) -> str:
+    """Format the collect_status() output into a readable terminal report."""
+    if not stats:
+        return "no problems found under problems/ - run: cses sync"
+
+    if use_color is None:
+        use_color = sys.stdout.isatty()
+
+    green = "\033[32m" if use_color else ""
+    yellow = "\033[33m" if use_color else ""
+    dim = "\033[90m" if use_color else ""
+    bold = "\033[1m" if use_color else ""
+    reset = "\033[0m" if use_color else ""
+
+    w_cat = max(max(len(c) for c in stats), len("Category"))
+    lines: list[str] = [
+        f"{bold}{'Category':<{w_cat}}   {'Solved / Total':<14}   {'Progress':<8}{reset}",
+        f"{dim}{'-' * (w_cat + 28)}{reset}",
+    ]
+
+    total_solved = 0
+    total_problems = 0
+
+    for cat, data in stats.items():
+        s = len(data["solved"])
+        t = s + len(data["unsolved"])
+        total_solved += s
+        total_problems += t
+        pct = (s / t * 100.0) if t > 0 else 0.0
+
+        if s == t and t > 0:
+            color = green
+        elif s > 0:
+            color = yellow
+        else:
+            color = dim
+
+        lines.append(
+            f"{cat:<{w_cat}}   {color}{s:>6} / {t:<5}{reset}   {color}{pct:>7.1f}%{reset}"
+        )
+
+        if show_unsolved and data["unsolved"]:
+            for slug in data["unsolved"]:
+                lines.append(f"  {dim}-{reset} {slug}")
+
+    pct_total = (total_solved / total_problems * 100.0) if total_problems > 0 else 0.0
+    lines.append(f"{dim}{'-' * (w_cat + 28)}{reset}")
+    lines.append(
+        f"{bold}{'Total':<{w_cat}}{reset}   {bold}{total_solved:>6} / {total_problems:<5}{reset}   {bold}{pct_total:>7.1f}%{reset}"
+    )
+    return "\n".join(lines)
 
 
 def is_problem_dir(path: str) -> bool:
