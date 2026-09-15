@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import getpass
+import math
 import os
 import subprocess
 import sys
@@ -46,6 +47,13 @@ from cses_lib import (
     submit_solution,
     whoami,
 )
+
+
+def positive_float(value: str) -> float:
+    number = float(value)
+    if number <= 0 or not math.isfinite(number):
+        raise argparse.ArgumentTypeError("must be a positive number")
+    return number
 
 
 def cmd_fetch(args: argparse.Namespace) -> int:
@@ -173,6 +181,8 @@ def cmd_run(args: argparse.Namespace) -> int:
     cmd = [os.path.join(repo_root(), "scripts", "run.sh"), source or path]
     if args.interactive:
         cmd.append("-i")
+    if args.timeout is not None:
+        cmd.extend(("--timeout", str(args.timeout)))
     return subprocess.call(cmd)
 
 
@@ -318,6 +328,13 @@ def build_parser() -> argparse.ArgumentParser:
         help="slug, folder, or sol.py (default: current problem folder)",
     )
     r.add_argument("-i", "--interactive", action="store_true", help="read stdin")
+    r.add_argument(
+        "--timeout",
+        type=positive_float,
+        default=None,
+        metavar="SEC",
+        help="maximum seconds per sample test (default: no timeout)",
+    )
     r.set_defaults(func=cmd_run)
 
     u = sub.add_parser("submit", help="submit sol.cpp or sol.py and poll the verdict")

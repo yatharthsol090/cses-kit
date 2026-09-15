@@ -19,7 +19,7 @@ cses sync
 
 ## Setup
 
-macOS or Linux with `g++`, `python3`, and `curl`. Node.js is required only for `sol.js` solutions.
+macOS or Linux with `g++`, `python3`, and `curl`.
 
 ```bash
 chmod +x cses scripts/run.sh
@@ -57,12 +57,11 @@ cses fetch <url> <problem-dir>         # refresh one statement + samples
 
 cses run trailing-zeroes               # sample tests (C++, Python, or Node.js)
 cses run trailing-zeroes/sol.py        # force Python
-cses run trailing-zeroes/sol.js        # force Node.js
+cses run --timeout 2 trailing-zeroes    # limit each sample to 2 seconds
 cses run -i                            # in a problem folder; type input
 
 cses submit trailing-zeroes
 cses submit trailing-zeroes/sol.py
-cses submit trailing-zeroes/sol.js
 
 cses login
 cses whoami

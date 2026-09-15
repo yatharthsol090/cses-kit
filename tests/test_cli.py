@@ -53,6 +53,13 @@ class CliTests(unittest.TestCase):
         args = p.parse_args(["submit", "trailing-zeroes/sol.py"])
         self.assertEqual(args.target, "trailing-zeroes/sol.py")
 
+    def test_parser_run_timeout(self):
+        p = cses_cli.build_parser()
+        args = p.parse_args(["run", "--timeout", "1.5", "trailing-zeroes"])
+        self.assertEqual(args.timeout, 1.5)
+        with self.assertRaises(SystemExit):
+            p.parse_args(["run", "--timeout", "0"])
+
     def test_cmd_new_without_url(self):
         tmp = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, tmp, ignore_errors=True)

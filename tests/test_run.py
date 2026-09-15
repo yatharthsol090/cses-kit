@@ -1,6 +1,7 @@
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -142,3 +143,54 @@ class RunShTests(unittest.TestCase):
     def test_missing_source_fails(self):
         proc = self._run(self.tmp)
         self.assertNotEqual(proc.returncode, 0)
+
+    def test_python_sample_timeout(self):
+        with open(os.path.join(self.tmp, "sol.py"), "w") as f:
+            f.write("import time\ntime.sleep(2)\n")
+        with open(os.path.join(self.tmp, "tests", "1.in"), "w") as f:
+            f.write("\n")
+        with open(os.path.join(self.tmp, "tests", "1.out"), "w") as f:
+            f.write("\n")
+
+        proc = self._run(self.tmp, "--timeout", "0.1")
+
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertIn("TLE", proc.stdout)
+        self.assertIn("timed out after 0.1s", proc.stdout)
+
+    def test_timeout_helper_skips_leading_dash_dash(self):
+        helper = os.path.join(ROOT, "scripts", "run_with_timeout.py")
+        input_path = os.path.join(self.tmp, "input.txt")
+        with open(input_path, "w", encoding="utf-8") as f:
+            f.write("7\n")
+
+        proc = subprocess.run(
+            [
+                sys.executable,
+                helper,
+                "0.5",
+                input_path,
+                "--",
+                sys.executable,
+                "-c",
+                "import sys; print(sys.stdin.read().strip())",
+            ],
+            capture_output=True,
+            text=True,
+        )
+
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertEqual(proc.stdout.strip(), "7")
+
+    def test_python_sample_finishes_within_timeout(self):
+        with open(os.path.join(self.tmp, "sol.py"), "w") as f:
+            f.write("import time\ntime.sleep(0.05)\nprint('hello')\n")
+        with open(os.path.join(self.tmp, "tests", "1.in"), "w") as f:
+            f.write("\n")
+        with open(os.path.join(self.tmp, "tests", "1.out"), "w") as f:
+            f.write("hello\n")
+
+        proc = self._run(self.tmp, "--timeout", "1")
+
+        self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
+        self.assertIn("passed", proc.stdout)
