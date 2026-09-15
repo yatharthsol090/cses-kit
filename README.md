@@ -37,9 +37,6 @@ export PATH="$HOME/.local/bin:$PATH"
 Put that `export` in `~/.zshrc` so it sticks. Until `cses` is on `PATH`, use
 `./cses` from the repo root.
 
-`.env` (gitignored):
-
-
 ### Auth
 
 Prefer a browser session cookie (no password is stored):
@@ -51,11 +48,6 @@ Prefer a browser session cookie (no password is stored):
 
 `CSES_NICK` / `CSES_PASS` password auto-login is deprecated and only used
 when `CSES_ALLOW_PASSWORD_LOGIN=1`.
-
-```
-CSES_NICK=your_username
-CSES_PASS=your_password
-```
 
 On macOS, `include/bits/stdc++.h` is a shim so `#include <bits/stdc++.h>` works
 with Apple clang.
