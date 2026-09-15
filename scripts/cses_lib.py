@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """Shared helpers for talking to cses.fi (stdlib + curl only)."""
 from __future__ import annotations
 
@@ -95,9 +95,9 @@ def ensure_session(cookie_file: str | None = None) -> str:
     nick, password = env_credentials()
     if not nick or not password:
         raise CurlError(
-            "not logged in — set CSES_NICK and CSES_PASS in .env, or run: cses login"
+            "not logged in â€” set CSES_NICK and CSES_PASS in .env, or run: cses login"
         )
-    print("logging in from .env …", flush=True)
+    print("logging in from .env â€¦", flush=True)
     return login(nick, password, cookie_file=cookie_file)
 
 
@@ -237,18 +237,18 @@ def slice_between(s: str, start_pat: str, end: str) -> str:
 
 
 _LATEX = {
-    r"\ldots": "…", r"\cdots": "…", r"\dots": "…", r"\vdots": "⋮",
-    r"\cdot": "·", r"\times": "×", r"\div": "÷", r"\pm": "±", r"\mp": "∓",
-    r"\leq": "≤", r"\le": "≤", r"\geq": "≥", r"\ge": "≥",
-    r"\neq": "≠", r"\ne": "≠", r"\approx": "≈", r"\equiv": "≡",
-    r"\infty": "∞", r"\to": "→", r"\rightarrow": "→", r"\leftarrow": "←",
-    r"\in": "∈", r"\mid": "|", r"\bmod": "mod", r"\%": "%",
+    r"\ldots": "â€¦", r"\cdots": "â€¦", r"\dots": "â€¦", r"\vdots": "â‹®",
+    r"\cdot": "Â·", r"\times": "Ã—", r"\div": "Ã·", r"\pm": "Â±", r"\mp": "âˆ“",
+    r"\leq": "â‰¤", r"\le": "â‰¤", r"\geq": "â‰¥", r"\ge": "â‰¥",
+    r"\neq": "â‰ ", r"\ne": "â‰ ", r"\approx": "â‰ˆ", r"\equiv": "â‰¡",
+    r"\infty": "âˆž", r"\to": "â†’", r"\rightarrow": "â†’", r"\leftarrow": "â†",
+    r"\in": "âˆˆ", r"\mid": "|", r"\bmod": "mod", r"\%": "%",
     r"\{": "{", r"\}": "}", r"\,": " ", r"\;": " ", r"\!": "", r"\ ": " ",
-    r"\left": "", r"\right": "", r"\lfloor": "⌊", r"\rfloor": "⌋",
-    r"\lceil": "⌈", r"\rceil": "⌉",
+    r"\left": "", r"\right": "", r"\lfloor": "âŒŠ", r"\rfloor": "âŒ‹",
+    r"\lceil": "âŒˆ", r"\rceil": "âŒ‰",
 }
-_SUP = str.maketrans("0123456789+-=()n", "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻⁼⁽⁾ⁿ")
-_SUB = str.maketrans("0123456789+-=()", "₀₁₂₃₄₅₆₇₈₉₊₋₌₍₎")
+_SUP = str.maketrans("0123456789+-=()n", "â°Â¹Â²Â³â´âµâ¶â·â¸â¹âºâ»â¼â½â¾â¿")
+_SUB = str.maketrans("0123456789+-=()", "â‚€â‚â‚‚â‚ƒâ‚„â‚…â‚†â‚‡â‚ˆâ‚‰â‚Šâ‚‹â‚Œâ‚â‚Ž")
 
 
 def prettify_math(expr: str) -> str:
@@ -317,7 +317,7 @@ def parse_statement(page: str, url: str) -> tuple[str, str, list[tuple[str, str]
     limits_html = slice_between(page, r'<ul class="task-constraints">', "</ul>")
     items = re.findall(r"<li>(.*?)</li>", limits_html, flags=re.S)
     items = [html.unescape(re.sub(r"<[^>]+>", "", it)).strip() for it in items]
-    limits = " · ".join(it for it in items if it)
+    limits = " Â· ".join(it for it in items if it)
     md_div = slice_between(page, r'<div class="md">', "</div>")
     body = md_from_div(md_div) if md_div else "_Could not parse statement automatically._\n"
     header = f"# {title}\n\n**Link:** {url}\n"
@@ -358,7 +358,7 @@ def fetch_problem(url: str, out_dir: str) -> tuple[str, int]:
 
 def slugify_problem(title: str) -> str:
     s = html.unescape(title).lower()
-    s = s.replace("'", "").replace("’", "")
+    s = s.replace("'", "").replace("â€™", "")
     s = re.sub(r"[^a-z0-9]+", "-", s)
     return s.strip("-") or "problem"
 
@@ -457,7 +457,7 @@ def find_problem(spec: str | None) -> tuple[str, str | None]:
         d = problem_from_cwd()
         if not d:
             raise CurlError(
-                "not in a problem folder — pass a slug (trailing-zeroes) or a path"
+                "not in a problem folder â€” pass a slug (trailing-zeroes) or a path"
             )
         return d, None
 
@@ -487,7 +487,7 @@ def find_problem(spec: str | None) -> tuple[str, str | None]:
         d = problem_from_cwd()
         if not d:
             raise CurlError(
-                "not in a problem folder — pass a slug (trailing-zeroes) or a path"
+                "not in a problem folder â€” pass a slug (trailing-zeroes) or a path"
             )
         src = os.path.join(d, file_hint)
         if not os.path.isfile(src):
@@ -596,7 +596,7 @@ def login(nick: str, password: str, cookie_file: str | None = None) -> str:
     )
     name = account_name(body) or whoami(cookie_file)
     if not name:
-        raise CurlError("login failed — check username/password")
+        raise CurlError("login failed â€” check username/password")
     if code >= 400:
         raise CurlError(f"login HTTP {code} ({final})")
     return name
@@ -609,7 +609,7 @@ def task_id_from_problem_dir(prob_dir: str) -> str:
         if tid:
             return tid
     raise CurlError(
-        f"no CSES task id in {stmt} — fetch the statement first "
+        f"no CSES task id in {stmt} â€” fetch the statement first "
         f"(cses fetch <url> {prob_dir})"
     )
 
@@ -753,10 +753,10 @@ LAST_SUBMIT = "last-submit.txt"
 def _clip(text: str, max_lines: int = 40, max_chars: int = 2500) -> str:
     text = text.replace("\r\n", "\n")
     if len(text) > max_chars:
-        text = text[:max_chars].rstrip() + "\n… (truncated)\n"
+        text = text[:max_chars].rstrip() + "\nâ€¦ (truncated)\n"
     lines = text.splitlines()
     if len(lines) > max_lines:
-        text = "\n".join(lines[:max_lines]) + "\n… (truncated)\n"
+        text = "\n".join(lines[:max_lines]) + "\nâ€¦ (truncated)\n"
     return text
 
 
@@ -913,7 +913,7 @@ def write_submit_report(
 def derive_verdict(info: dict[str, str | list[str]], status: str) -> str:
     result = str(info.get("Result") or "").strip()
     if result:
-        # "ACCEPTED" or "WRONG ANSWER" etc. — ignore surrounding noise.
+        # "ACCEPTED" or "WRONG ANSWER" etc. â€” ignore surrounding noise.
         up = result.upper()
         for label in (
             "ACCEPTED",
@@ -967,7 +967,7 @@ def record_verdict(prob_dir: str, verdict: str, submit_id: str, info: dict[str, 
     if when:
         bits.append(when)
     bits.append(f"[submission {submit_id}]({url})")
-    line = "**Verdict:** " + " · ".join(bits)
+    line = "**Verdict:** " + " Â· ".join(bits)
     stmt = os.path.join(prob_dir, "statement.md")
     try:
         text = open(stmt, encoding="utf-8", errors="replace").read()
@@ -1108,7 +1108,7 @@ def submit_solution(
     if os.path.getsize(sol) > 128 * 1024:
         raise CurlError("source is over CSES's 128 kB limit")
     if sol_looks_like_template(sol):
-        raise CurlError(f"{sol} still looks like the empty template — refusing to submit")
+        raise CurlError(f"{sol} still looks like the empty template â€” refusing to submit")
 
     nick = ensure_session(cookie_file)
 
@@ -1121,7 +1121,7 @@ def submit_solution(
         page = fetch(f"{BASE}/problemset/task/{task}", cookie_file=cookie_file)
         csrf = extract_csrf(page)
     if not csrf:
-        raise CurlError("could not find csrf_token — try: cses login")
+        raise CurlError("could not find csrf_token â€” try: cses login")
 
     print(f"submitting {sol}", flush=True)
     print(f"  user   {nick}", flush=True)
@@ -1294,3 +1294,4 @@ def warn_password_deprecated() -> bool:
         file=sys.stderr,
     )
     return True
+

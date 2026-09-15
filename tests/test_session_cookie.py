@@ -17,7 +17,8 @@ class CookieJarTests(unittest.TestCase):
 
     def test_writes_netscape_line_with_phpsessid(self):
         cses_lib.write_cookie_jar("abc123", cookie_file=self.jar)
-        text = open(self.jar, encoding="utf-8").read()
+        with open(self.jar, encoding="utf-8") as f:
+            text = f.read()
         self.assertIn("# Netscape HTTP Cookie File", text)
         fields = [l for l in text.splitlines() if not l.startswith("#") and l.strip()]
         self.assertEqual(len(fields), 1)
@@ -77,3 +78,14 @@ class WarnPasswordDeprecatedTests(unittest.TestCase):
 if __name__ == "__main__":
     unittest.main()
 
+
+
+
+class EnsureSessionGateTests(unittest.TestCase):
+    def test_raises_when_password_login_disabled(self):
+        env = {k: v for k, v in os.environ.items() if k != "CSES_ALLOW_PASSWORD_LOGIN"}
+        with mock.patch.dict(os.environ, env, clear=True):
+            with mock.patch.object(cses_lib, "whoami", lambda *a, **k: None):
+                with self.assertRaises(cses_lib.CurlError) as ctx:
+                    cses_lib.ensure_session(cookie_file="ignored")
+        self.assertIn("CSES_ALLOW_PASSWORD_LOGIN", str(ctx.exception))
