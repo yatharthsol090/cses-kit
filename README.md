@@ -1,4 +1,4 @@
-﻿# CSES kit
+# CSES kit
 
 Unofficial CLI to fetch [CSES](https://cses.fi/problemset/) statements, test a
 solution locally, and submit from the terminal. Not affiliated with CSES, and

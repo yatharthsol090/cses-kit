@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """Shared helpers for talking to cses.fi (stdlib + curl only)."""
 from __future__ import annotations
 
