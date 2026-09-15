@@ -98,18 +98,49 @@ def env_credentials() -> tuple[str, str]:
 
 
 def ensure_session(cookie_file: str | None = None) -> str:
-    """Return the logged-in username, logging in from .env if needed."""
+    """Return the logged-in username, preferring a session cookie.
+
+    Order of precedence:
+      1. Existing cookie jar that still authenticates.
+      2. CSES_PHPSESSID env var -> write/refresh jar, then verify.
+      3. Password auto-login, only if CSES_ALLOW_PASSWORD_LOGIN is truthy.
+    """
     cookie_file = cookie_file or cookie_path()
+
+    # 1. Existing jar
     name = whoami(cookie_file)
     if name:
+        if env_credentials()[1]:
+            warn_password_deprecated()
         return name
-    nick, password = env_credentials()
-    if not nick or not password:
+
+    # 2. CSES_PHPSESSID -> write jar, then verify
+    sid = env_session_id()
+    if sid:
+        write_cookie_jar(sid, cookie_file=cookie_file)
+        name = whoami(cookie_file)
+        if name:
+            if env_credentials()[1]:
+                warn_password_deprecated()
+            return name
+        clear_session(cookie_file=cookie_file)
         raise CurlError(
-            "not logged in â€” set CSES_NICK and CSES_PASS in .env, or run: cses login"
+            "CSES_PHPSESSID is invalid or expired; "
+            "re-run: cses login --session <PHPSESSID>"
         )
-    print("logging in from .env â€¦", flush=True)
-    return login(nick, password, cookie_file=cookie_file)
+
+    # 3. Password auto-login (deprecated, opt-in)
+    allow = (os.environ.get("CSES_ALLOW_PASSWORD_LOGIN") or "").strip().lower()
+    nick, password = env_credentials()
+    if allow in ("1", "true", "yes") and nick and password:
+        print("logging in from .env (CSES_ALLOW_PASSWORD_LOGIN) ...", flush=True)
+        return login(nick, password, cookie_file=cookie_file)
+
+    raise CurlError(
+        "not logged in -- run: cses login --session <PHPSESSID> "
+        "(or set CSES_PHPSESSID). "
+        "Password auto-login is deprecated; set CSES_ALLOW_PASSWORD_LOGIN=1 to allow it."
+    )
 
 
 def template_cpp() -> str:
@@ -248,18 +279,18 @@ def slice_between(s: str, start_pat: str, end: str) -> str:
 
 
 _LATEX = {
-    r"\ldots": "â€¦", r"\cdots": "â€¦", r"\dots": "â€¦", r"\vdots": "â‹®",
-    r"\cdot": "Â·", r"\times": "Ã—", r"\div": "Ã·", r"\pm": "Â±", r"\mp": "âˆ“",
-    r"\leq": "â‰¤", r"\le": "â‰¤", r"\geq": "â‰¥", r"\ge": "â‰¥",
-    r"\neq": "â‰ ", r"\ne": "â‰ ", r"\approx": "â‰ˆ", r"\equiv": "â‰¡",
-    r"\infty": "âˆž", r"\to": "â†’", r"\rightarrow": "â†’", r"\leftarrow": "â†",
-    r"\in": "âˆˆ", r"\mid": "|", r"\bmod": "mod", r"\%": "%",
+    r"\ldots": "…", r"\cdots": "…", r"\dots": "…", r"\vdots": "⋮",
+    r"\cdot": "·", r"\times": "×", r"\div": "÷", r"\pm": "±", r"\mp": "∓",
+    r"\leq": "≤", r"\le": "≤", r"\geq": "≥", r"\ge": "≥",
+    r"\neq": "≠", r"\ne": "≠", r"\approx": "≈", r"\equiv": "≡",
+    r"\infty": "∞", r"\to": "→", r"\rightarrow": "→", r"\leftarrow": "←",
+    r"\in": "∈", r"\mid": "|", r"\bmod": "mod", r"\%": "%",
     r"\{": "{", r"\}": "}", r"\,": " ", r"\;": " ", r"\!": "", r"\ ": " ",
-    r"\left": "", r"\right": "", r"\lfloor": "âŒŠ", r"\rfloor": "âŒ‹",
-    r"\lceil": "âŒˆ", r"\rceil": "âŒ‰",
+    r"\left": "", r"\right": "", r"\lfloor": "⌊", r"\rfloor": "⌋",
+    r"\lceil": "⌈", r"\rceil": "⌉",
 }
-_SUP = str.maketrans("0123456789+-=()n", "â°Â¹Â²Â³â´âµâ¶â·â¸â¹âºâ»â¼â½â¾â¿")
-_SUB = str.maketrans("0123456789+-=()", "â‚€â‚â‚‚â‚ƒâ‚„â‚…â‚†â‚‡â‚ˆâ‚‰â‚Šâ‚‹â‚Œâ‚â‚Ž")
+_SUP = str.maketrans("0123456789+-=()n", "⁰¹²³⁴⁵⁶⁷⁸⁹⁺⁻⁼⁽⁾ⁿ")
+_SUB = str.maketrans("0123456789+-=()", "₀₁₂₃₄₅₆₇₈₉₊₋₌₍₎")
 
 
 def prettify_math(expr: str) -> str:

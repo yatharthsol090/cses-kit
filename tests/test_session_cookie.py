@@ -75,17 +75,62 @@ class WarnPasswordDeprecatedTests(unittest.TestCase):
         self.assertIn("deprecated", buf.getvalue())
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 
 
 class EnsureSessionGateTests(unittest.TestCase):
     def test_raises_when_password_login_disabled(self):
-        env = {k: v for k, v in os.environ.items() if k != "CSES_ALLOW_PASSWORD_LOGIN"}
+        env = {k: v for k, v in os.environ.items()
+               if k not in ("CSES_ALLOW_PASSWORD_LOGIN", "CSES_PHPSESSID",
+                            "CSES_NICK", "CSES_PASS")}
         with mock.patch.dict(os.environ, env, clear=True):
-            with mock.patch.object(cses_lib, "whoami", lambda *a, **k: None):
-                with self.assertRaises(cses_lib.CurlError) as ctx:
-                    cses_lib.ensure_session(cookie_file="ignored")
+            with mock.patch.object(cses_lib, "load_dotenv", lambda *a, **k: None):
+                with mock.patch.object(cses_lib, "whoami", lambda *a, **k: None):
+                    with mock.patch.object(cses_lib, "env_session_id", lambda: ""):
+                        with self.assertRaises(cses_lib.CurlError) as ctx:
+                            cses_lib.ensure_session(cookie_file="ignored")
         self.assertIn("CSES_ALLOW_PASSWORD_LOGIN", str(ctx.exception))
+
+
+class EnsureSessionJarTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.jar = os.path.join(self.tmp, "cookies.txt")
+
+    def test_uses_existing_valid_jar(self):
+        with mock.patch.object(cses_lib, "whoami", lambda *a, **k: "alice"):
+            with mock.patch.object(cses_lib, "env_credentials", lambda: ("", "")):
+                self.assertEqual(cses_lib.ensure_session(cookie_file=self.jar), "alice")
+
+    def test_env_sid_writes_and_verifies(self):
+        with mock.patch.object(cses_lib, "whoami", side_effect=[None, "bob"]):
+            with mock.patch.object(cses_lib, "env_session_id", lambda: "sid123"):
+                with mock.patch.object(cses_lib, "write_cookie_jar") as w:
+                    with mock.patch.object(cses_lib, "env_credentials", lambda: ("", "")):
+                        self.assertEqual(
+                            cses_lib.ensure_session(cookie_file=self.jar), "bob"
+                        )
+                        w.assert_called_once_with("sid123", cookie_file=self.jar)
+
+    def test_bad_env_sid_clears_and_raises(self):
+        with mock.patch.object(cses_lib, "whoami", return_value=None):
+            with mock.patch.object(cses_lib, "env_session_id", lambda: "bad"):
+                with mock.patch.object(cses_lib, "write_cookie_jar"):
+                    with mock.patch.object(cses_lib, "clear_session") as c:
+                        with mock.patch.object(cses_lib, "env_credentials", lambda: ("", "")):
+                            with self.assertRaises(cses_lib.CurlError):
+                                cses_lib.ensure_session(cookie_file=self.jar)
+                        c.assert_called_once_with(cookie_file=self.jar)
+
+
+class CliHelpTests(unittest.TestCase):
+    def test_help_lists_login_and_logout(self):
+        script = os.path.join(os.path.dirname(__file__), "..", "scripts", "cses.py")
+        out = __import__("subprocess").run(
+            [sys.executable, script, "--help"],
+            capture_output=True, text=True,
+        )
+        self.assertIn("login", out.stdout)
+        self.assertIn("logout", out.stdout)
+
+if __name__ == "__main__":
+    unittest.main()
