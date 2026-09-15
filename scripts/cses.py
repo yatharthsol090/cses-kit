@@ -11,6 +11,7 @@ Usage:
     cses new <category> <slug> [url]
     cses install
     cses celebrate
+    cses version
 """
 from __future__ import annotations
 
@@ -34,6 +35,7 @@ from cses_lib import (
     LIST_URL,
     load_dotenv,
     login as do_login,
+    package_version,
     parse_problem_list,
     problem_dir_for,
     repo_root,
@@ -223,10 +225,21 @@ def cmd_celebrate(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_version(_args: argparse.Namespace) -> int:
+    print(f"cses-kit {package_version()}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="cses",
         description="Sync CSES problems locally, log in, run samples, and submit.",
+    )
+    p.add_argument(
+        "-V",
+        "--version",
+        action="version",
+        version=f"cses-kit {package_version()}",
     )
     sub = p.add_subparsers(dest="cmd", required=True)
 
@@ -293,6 +306,9 @@ def build_parser() -> argparse.ArgumentParser:
     c.add_argument("--title", default="Trailing Zeros")
     c.add_argument("--score", default="13/13")
     c.set_defaults(func=cmd_celebrate)
+
+    v = sub.add_parser("version", help="print the cses-kit version")
+    v.set_defaults(func=cmd_version)
     return p
 
 

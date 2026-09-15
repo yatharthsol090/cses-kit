@@ -24,7 +24,7 @@ class CliTests(unittest.TestCase):
             text=True,
         )
         self.assertEqual(proc.returncode, 0)
-        for cmd in ("sync", "run", "submit", "login", "new", "fetch"):
+        for cmd in ("sync", "run", "submit", "login", "new", "fetch", "version"):
             self.assertIn(cmd, proc.stdout)
 
     def test_missing_subcommand_fails(self):

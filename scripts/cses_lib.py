@@ -40,6 +40,17 @@ def repo_root() -> str:
     return os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 
+def package_version(root: str | None = None) -> str:
+    """Version string from the repo-root VERSION file (e.g. 0.1.0)."""
+    path = os.path.join(root or repo_root(), "VERSION")
+    try:
+        with open(path, encoding="utf-8") as f:
+            ver = f.read().strip()
+    except OSError:
+        return "0.0.0"
+    return ver or "0.0.0"
+
+
 def cookie_path() -> str:
     d = os.path.join(repo_root(), ".cses")
     os.makedirs(d, mode=0o700, exist_ok=True)

@@ -68,6 +68,7 @@ cses login
 cses whoami
 cses install
 cses celebrate                         # preview the ACCEPTED banner
+cses version                           # or: cses --version
 ```
 
 Slugs, `problems/<cat>/<slug>`, or a `sol.cpp` / `sol.py` / `sol.js` path all work. From
@@ -97,6 +98,14 @@ In VS Code / Cursor, open `sol.cpp`, `sol.py`, or `sol.js` and press **Cmd+Shift
 - C++: `-std=gnu++17 -O2` plus AddressSanitizer and UBSan.
 - Output compare ignores trailing whitespace, like CSES.
 - Sanitizer timings are slower than a real submission.
+
+## Version
+
+`cses --version` prints the current [SemVer](https://semver.org/) from the
+`VERSION` file. Release notes live in
+[CHANGELOG.md](CHANGELOG.md); people with merged work are listed in
+[CONTRIBUTORS.md](CONTRIBUTORS.md). GitHub Releases are created from `v*.*.*`
+tags — see [CONTRIBUTING.md](CONTRIBUTING.md#versioning-and-releases).
 
 ## Contributing
 

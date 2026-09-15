@@ -52,6 +52,39 @@ Prefer stdlib + `curl`. If you need a new dependency, explain why in the PR.
 - Tests added or updated when behavior changes.
 - `python3 -m unittest discover -s tests -v` passes.
 - README / CONTRIBUTING updated if the CLI or setup changed.
+- User-facing changes listed under `[Unreleased]` in `CHANGELOG.md`.
 - No unrelated files, secrets, or CSES problem statements.
+
+## Versioning and releases
+
+cses-kit uses [Semantic Versioning](https://semver.org/). The number in
+`VERSION` is what `cses --version` prints.
+
+| Bump | Tag examples | When |
+| --- | --- | --- |
+| **PATCH** | `v0.2.1` | Bug fix; no new command or language |
+| **MINOR** | `v0.2.0`, `v0.3.0` | New command, language, or user-facing behavior |
+| **MAJOR** | `v1.0.0`, `v2.0.0` | Breaking CLI change, or declaring the CLI stable |
+
+`0.x` means the command surface may still move. `v1.0.0` is when we call it
+stable.
+
+### Cutting a release (maintainers)
+
+1. On `main`, set `VERSION` to `X.Y.Z`.
+2. In `CHANGELOG.md`, move `[Unreleased]` notes under
+   `## [X.Y.Z] - YYYY-MM-DD` and add compare links for the new tag.
+3. Add first-time merged authors to `CONTRIBUTORS.md` if they are not listed.
+4. Commit and push `main` (linear history; squash-merge PRs as usual).
+5. Tag annotated and push the tag (not before `VERSION` matches):
+
+```bash
+git tag -a vX.Y.Z -m vX.Y.Z
+git push origin vX.Y.Z
+```
+
+Pushing `vX.Y.Z` runs `.github/workflows/release.yml`, which checks `VERSION`
+and publishes a [GitHub Release](https://github.com/yatharthsol090/cses-kit/releases)
+from that changelog section.
 
 By participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
