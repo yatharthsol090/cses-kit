@@ -1198,7 +1198,7 @@ def offer_next(rel_dir: str) -> None:
         print()
         return
     if ans in ("", "y", "yes"):
-        open_in_editor(os.path.join(repo_root(), rel_dir, "sol.cpp"))
+        open_in_editor(pick_source_file(os.path.join(repo_root(), rel_dir)))
     else:
         print(f"  skipped  {hint}")
 

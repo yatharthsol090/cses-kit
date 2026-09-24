@@ -15,6 +15,11 @@ the command surface stable.
 
 ## [Unreleased]
 
+### Fixed
+
+- Open the selected solution file when moving to the next problem, including
+  Python and JavaScript solutions when the C++ file is still a template.
+
 ### Added
 
 ## [0.2.0] - 2026-09-24
