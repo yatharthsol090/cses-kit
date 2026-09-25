@@ -1,3 +1,4 @@
+import io
 import os
 import shutil
 import tempfile
@@ -113,6 +114,46 @@ class SourceAndPathTests(unittest.TestCase):
         with open(os.path.join(d, "statement.md"), "w") as f:
             f.write("# Demo\n\n**Link:** https://cses.fi/problemset/task/1618\n")
         return d
+
+    def test_offer_next_opens_selected_source(self):
+        shutil.copy(os.path.join(ROOT, "template.cpp"), self.tmp)
+        cases = [
+            ({"sol.py": "print(1)\n"}, "sol.py"),
+            ({"sol.cpp": None, "sol.js": "console.log(1);\n"}, "sol.js"),
+            ({"sol.cpp": "int main() {}\n", "sol.py": "print(1)\n"}, "sol.cpp"),
+            ({"sol.cpp": None}, "sol.cpp"),
+        ]
+        for index, (sources, expected) in enumerate(cases):
+            with self.subTest(expected=expected, sources=list(sources)):
+                d = self._prob(str(index))
+                for name, content in sources.items():
+                    path = os.path.join(d, name)
+                    if content is None:
+                        shutil.copy(os.path.join(ROOT, "template.cpp"), path)
+                    else:
+                        with open(path, "w") as f:
+                            f.write(content)
+                with patch.object(lib, "repo_root", return_value=self.tmp), \
+                     patch.object(lib, "_interactive", return_value=True), \
+                     patch("builtins.input", return_value=""), \
+                     patch.object(lib, "open_in_editor") as editor:
+                    lib.offer_next(os.path.relpath(d, self.tmp))
+                editor.assert_called_once_with(os.path.join(d, expected))
+
+    def test_offer_next_prints_python_path_without_editor(self):
+        d = self._prob()
+        source = os.path.join(d, "sol.py")
+        with open(source, "w") as f:
+            f.write("print(1)\n")
+        with patch.object(lib, "repo_root", return_value=self.tmp), \
+             patch.object(lib, "_interactive", return_value=True), \
+             patch("builtins.input", return_value="y"), \
+             patch.object(lib.shutil, "which", return_value=None), \
+             patch.dict(os.environ, {"EDITOR": ""}), \
+             patch("sys.stdout", new_callable=io.StringIO) as output:
+            lib.offer_next(os.path.relpath(d, self.tmp))
+        self.assertIn(source, output.getvalue())
+        self.assertNotIn("sol.cpp", output.getvalue())
 
     def test_pick_python_when_cpp_is_template(self):
         d = self._prob()
