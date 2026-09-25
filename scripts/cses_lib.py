@@ -85,6 +85,29 @@ def load_dotenv(path: str | None = None) -> None:
             os.environ[key] = val
 
 
+def save_env_values(values: dict[str, str]) -> None:
+    """Persist local configuration values into the repo-local .env file."""
+    path = dotenv_path()
+    current: dict[str, str] = {}
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            for line in f:
+                s = line.strip()
+                if not s or s.startswith("#") or "=" not in s:
+                    continue
+                key, val = s.split("=", 1)
+                current[key.strip()] = val.strip()
+    except OSError:
+        current = {}
+
+    for key, val in values.items():
+        current[key] = str(val)
+
+    with open(path, "w", encoding="utf-8") as f:
+        for key in sorted(current):
+            f.write(f"{key}={current[key]}\n")
+
+
 def env_credentials() -> tuple[str, str]:
     load_dotenv()
     nick = (
@@ -654,14 +677,17 @@ def unique_dir(category: str, slug: str, taken: Iterable[str]) -> str:
         n += 1
 
 
-def problem_dir_for(task: dict[str, str], by_id: dict[str, str]) -> str:
-    if task["id"] in by_id:
-        return by_id[task["id"]]
+def problem_dir_for(task: dict[str, object], by_id: dict[str, str]) -> str:
+    task_id = str(task.get("id", ""))
+    if task_id in by_id:
+        return by_id[task_id]
     # Reuse a same-named folder even if statement.md has no link yet.
-    guessed = os.path.join(repo_root(), "problems", task["category"], task["slug"])
+    category = str(task.get("category", "roadmap"))
+    slug = str(task.get("slug", task_id))
+    guessed = os.path.join(repo_root(), "problems", category, slug)
     if os.path.isdir(guessed):
         return guessed
-    return unique_dir(task["category"], task["slug"], by_id.values())
+    return unique_dir(category, slug, by_id.values())
 
 
 def ensure_sol_cpp(out_dir: str) -> None:

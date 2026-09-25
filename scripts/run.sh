@@ -15,12 +15,49 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 if [[ $# -lt 1 ]]; then
-  echo "usage: scripts/run.sh <problem-dir-or-source> [-i]" >&2
+  echo "usage: scripts/run.sh <problem-dir-or-source> [-i] [--timeout SEC]" >&2
   exit 1
 fi
 
 ARG="$1"
-MODE="${2:-test}"
+shift
+MODE="test"
+TIMEOUT=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -i)
+      MODE="-i"
+      shift
+      ;;
+    --timeout)
+      if [[ $# -lt 2 ]]; then
+        echo "error: --timeout requires a positive number of seconds" >&2
+        exit 2
+      fi
+      TIMEOUT="$2"
+      shift 2
+      ;;
+    *)
+      echo "error: unknown option: $1" >&2
+      exit 2
+      ;;
+  esac
+done
+
+if [[ -n "$TIMEOUT" ]] && ! python3 - "$TIMEOUT" <<'PY'
+import math
+import sys
+
+try:
+    value = float(sys.argv[1])
+except ValueError:
+    raise SystemExit(1)
+raise SystemExit(0 if math.isfinite(value) and value > 0 else 1)
+PY
+then
+  echo "error: --timeout requires a positive number of seconds" >&2
+  exit 2
+fi
 
 if [[ -f "$ARG" ]]; then
   SRC="$ARG"
@@ -106,9 +143,42 @@ for in in "${INPUTS[@]}"; do
 
   # Time the run (seconds, portable).
   start=$(python3 -c 'import time; print(time.perf_counter())')
-  got="$("${RUN[@]}" < "$in" 2>/tmp/cses_stderr || true)"
+  status=0
+  if [[ -n "$TIMEOUT" ]]; then
+    if got="$(python3 "$ROOT/scripts/run_with_timeout.py" "$TIMEOUT" "$in" -- "${RUN[@]}" 2>/tmp/cses_stderr)"; then
+      :
+    else
+      status=$?
+    fi
+  else
+    if got="$("${RUN[@]}" < "$in" 2>/tmp/cses_stderr)"; then
+      :
+    else
+      status=$?
+    fi
+  fi
   end=$(python3 -c 'import time; print(time.perf_counter())')
   ms=$(python3 -c "print(round(($end - $start) * 1000))")
+
+  if [[ -n "$TIMEOUT" && $status -eq 124 ]]; then
+    echo "${RED}================================================${RST}"
+    echo "${RED}Test ${name}  TLE  (${ms}ms)${RST}"
+    echo "${RED}================================================${RST}"
+    echo "  note"
+    echo "    timed out after ${TIMEOUT}s"
+    echo "  expected"
+    sed 's/^/    /' "$exp"
+    if [[ -n "$got" ]]; then
+      echo "  got"
+      echo "$got" | sed 's/^/    /'
+    fi
+    if [[ -s /tmp/cses_stderr ]]; then
+      echo "  stderr"
+      sed 's/^/    /' /tmp/cses_stderr
+    fi
+    ((fail++)) || true
+    continue
+  fi
 
   if [[ ! -f "$exp" ]]; then
     echo "${YEL}? $name${RST}  (no expected output; got, ${ms}ms):"

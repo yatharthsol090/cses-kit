@@ -19,7 +19,8 @@ cses sync
 
 ## Setup
 
-macOS or Linux with `g++`, `python3`, and `curl`. Node.js is required only for `sol.js` solutions.
+macOS or Linux with `g++`, `python3`, and `curl`. Node.js is required only for
+`sol.js` solutions.
 
 ```bash
 chmod +x cses scripts/run.sh
@@ -44,13 +45,27 @@ CSES_NICK=your_username
 CSES_PASS=your_password
 ```
 
+For the complete interactive setup, run `cses setup`. It asks for the login
+details, editor (`nvim`, `vim`, `code`, `cursor`, or a custom command), existing
+problems directory, and starting roadmap.
+
 On macOS, `include/bits/stdc++.h` is a shim so `#include <bits/stdc++.h>` works
 with Apple clang.
+
+## Roadmap and release notes
+
+A roadmap is an ordered, user-provided list of tasks. A text roadmap uses one
+task ID, CSES task URL, or slug per line; comments and blank lines are allowed.
+Unknown lines are errors and the file order is preserved.
+
+Release notes are the changelog for the project itself, not the problem set. They live in [CHANGELOG.md](CHANGELOG.md) and summarize new features, fixes, and compatibility changes for the app.
+
 
 ## Commands
 
 ```bash
 cses sync                              # all public tasks → problems/
+cses sync --list roadmap.txt           # sync an ordered roadmap
 cses sync --category introductory      # one section
 cses new introductory missing-number https://cses.fi/problemset/task/1083
 cses fetch <url> <problem-dir>         # refresh one statement + samples
@@ -58,6 +73,7 @@ cses fetch <url> <problem-dir>         # refresh one statement + samples
 cses run trailing-zeroes               # sample tests (C++, Python, or Node.js)
 cses run trailing-zeroes/sol.py        # force Python
 cses run trailing-zeroes/sol.js        # force Node.js
+cses run --timeout 2 trailing-zeroes    # limit each sample to 2 seconds
 cses run -i                            # in a problem folder; type input
 
 cses submit trailing-zeroes
@@ -74,11 +90,21 @@ cses celebrate                         # preview the ACCEPTED banner
 cses status                            # solved vs remaining per category
 cses status --unsolved                 # also list unsolved problem slugs
 cses status --category introductory    # filter by category
+cses status --list roadmap.txt         # status in roadmap order
+cses run --list roadmap.txt             # run each downloaded roadmap entry
 cses version                           # or: cses --version
+cses tui                               # browse the selected roadmap
 ```
+
+The TUI reads the configured roadmap without modifying it. Downloaded and
+solved state is derived from local problem folders and the `Verdict:` line in
+each `statement.md`.
 
 Slugs, `problems/<cat>/<slug>`, or a `sol.cpp` / `sol.py` / `sol.js` path all work. From
 inside a problem folder, omit the name: `cses run` / `cses submit`.
+
+`--timeout` applies to sample tests only; it does not affect `cses run -i` or
+the no-sample-tests path.
 
 If multiple solution files exist and C++ is a real solution (not the
 template), the folder commands use C++. Otherwise they prefer Python, then
@@ -104,6 +130,7 @@ In VS Code / Cursor, open `sol.cpp`, `sol.py`, or `sol.js` and press **Cmd+Shift
 - C++: `-std=gnu++17 -O2` plus AddressSanitizer and UBSan.
 - Output compare ignores trailing whitespace, like CSES.
 - Sanitizer timings are slower than a real submission.
+- `--timeout` is a local safety timer, not a simulation of CSES judge time.
 
 ## Version
 

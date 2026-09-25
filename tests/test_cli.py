@@ -13,6 +13,7 @@ sys.path.insert(0, SCRIPTS)
 
 import cses as cses_cli  # noqa: E402
 import cses_lib as lib  # noqa: E402
+import setup_flow  # noqa: E402
 
 
 class CliTests(unittest.TestCase):
@@ -53,6 +54,15 @@ class CliTests(unittest.TestCase):
         args = p.parse_args(["submit", "trailing-zeroes/sol.py"])
         self.assertEqual(args.target, "trailing-zeroes/sol.py")
 
+    def test_parser_run_timeout(self):
+        p = cses_cli.build_parser()
+        args = p.parse_args(["run", "--timeout", "1.5", "trailing-zeroes"])
+        self.assertEqual(args.timeout, 1.5)
+        with self.assertRaises(SystemExit):
+            p.parse_args(["run", "--timeout", "0"])
+        for value in ("-5", "inf", "banana"):
+            with self.assertRaises(SystemExit):
+                p.parse_args(["run", "--timeout", value])
     def test_parser_next_optional_target(self):
         p = cses_cli.build_parser()
         args = p.parse_args(["next"])
@@ -106,6 +116,27 @@ class CliTests(unittest.TestCase):
             rc = cses_cli.cmd_new(ns)
             self.assertEqual(rc, 2)
 
+    def test_cmd_sync_reports_slug_only_entry_without_fetching(self):
+        tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tmp, ignore_errors=True)
+        ns = argparse.Namespace(
+            list_path="roadmap.txt",
+            category=None,
+            dry_run=False,
+            delay=0,
+        )
+        output = __import__("io").StringIO()
+        with patch.object(cses_cli, "load_roadmap", return_value=[{"slug": "demo"}]), patch.object(
+            cses_cli, "existing_problems", return_value={}
+        ), patch.object(cses_cli, "repo_root", return_value=tmp), patch.object(
+            cses_cli, "fetch_problem"
+        ) as fetch, patch("sys.stdout", output), patch("sys.stderr", output):
+            rc = cses_cli.cmd_sync(ns)
+        self.assertEqual(rc, 1)
+        fetch.assert_not_called()
+        self.assertIn("has no task URL", output.getvalue())
+        self.assertFalse(os.path.exists(os.path.join(tmp, "problems")))
+
     def test_parser_status_arguments(self):
         p = cses_cli.build_parser()
         args = p.parse_args(["status"])
@@ -118,10 +149,41 @@ class CliTests(unittest.TestCase):
         self.assertTrue(args.unsolved)
         self.assertTrue(args.json)
 
+    def test_parser_tui_command(self):
+        p = cses_cli.build_parser()
+        args = p.parse_args(["tui"])
+        self.assertEqual(args.cmd, "tui")
+
+    def test_parser_setup_command(self):
+        p = cses_cli.build_parser()
+        args = p.parse_args(["setup", "--editor", "code"])
+        self.assertEqual(args.cmd, "setup")
+        self.assertEqual(args.editor, "code")
+
+    def test_cmd_setup_prompts_for_editor_and_repo_path(self):
+        ns = argparse.Namespace(
+            editor=None,
+            session_mode=None,
+            repo_path=None,
+            roadmap="/tmp/roadmap.txt",
+        )
+        saved = {}
+        with patch.dict(os.environ, {"CSES_TESTING": "1"}), patch(
+            "builtins.input", side_effect=["cursor", "/tmp/cses-problems"]
+        ), patch(
+            "setup_flow.save_env_values", side_effect=lambda values: saved.update(values)
+        ):
+            rc = setup_flow.cmd_setup(ns)
+            self.assertEqual(rc, 0)
+            self.assertEqual(saved["CSES_EDITOR"], "cursor")
+            self.assertEqual(saved["CSES_PROBLEMS_DIR"], "/tmp/cses-problems")
+            self.assertEqual(saved["CSES_ROADMAP"], "/tmp/roadmap.txt")
+            self.assertNotIn("CSES_PASS", saved)
+
     def test_cmd_status_empty(self):
         tmp = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, tmp, ignore_errors=True)
-        ns = argparse.Namespace(category=None, unsolved=False, json=False)
+        ns = argparse.Namespace(category=None, unsolved=False, json=False, list_path=None)
         buf = __import__("io").StringIO()
         with patch.object(lib, "repo_root", return_value=tmp), patch.object(
             cses_cli, "repo_root", return_value=tmp
@@ -139,7 +201,7 @@ class CliTests(unittest.TestCase):
             f.write("# Weird Algorithm\n\n**Verdict:** ACCEPTED\n")
 
         buf = __import__("io").StringIO()
-        ns = argparse.Namespace(category=None, unsolved=False, json=True)
+        ns = argparse.Namespace(category=None, unsolved=False, json=True, list_path=None)
         with patch.object(lib, "repo_root", return_value=tmp), patch.object(
             cses_cli, "repo_root", return_value=tmp
         ), patch("sys.stdout", buf):

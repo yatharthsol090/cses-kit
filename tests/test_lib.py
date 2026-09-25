@@ -252,6 +252,26 @@ class SourceAndPathTests(unittest.TestCase):
             with self.assertRaises(lib.CurlError):
                 lib.find_problem("does-not-exist")
 
+    def test_problem_dir_for_reuses_existing_id_across_categories(self):
+        problem = self._prob("trailing-zeroes")
+        with patch.object(lib, "repo_root", return_value=self.tmp):
+            got = lib.problem_dir_for(
+                {"id": 1618, "category": "roadmap", "slug": "trailing-zeroes"},
+                {"1618": problem},
+            )
+            self.assertEqual(os.path.realpath(got), os.path.realpath(problem))
+
+    def test_problem_dir_for_does_not_reuse_same_slug_for_different_id(self):
+        problem = self._prob("trailing-zeroes")
+        with patch.object(lib, "repo_root", return_value=self.tmp):
+            got = lib.problem_dir_for(
+                {"id": "9999", "category": "roadmap", "slug": "trailing-zeroes"},
+                {},
+            )
+            expected = os.path.join(self.tmp, "problems", "roadmap", "trailing-zeroes")
+            self.assertEqual(os.path.realpath(got), os.path.realpath(expected))
+            self.assertNotEqual(os.path.realpath(got), os.path.realpath(problem))
+
     def test_unsupported_extension(self):
         d = self._prob()
         rs = os.path.join(d, "sol.rs")
