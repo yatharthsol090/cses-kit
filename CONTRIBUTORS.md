@@ -10,3 +10,4 @@ your first merge.
 - [TayfurYldz](https://github.com/TayfurYldz) — Node.js run/submit ([#23](https://github.com/yatharthsol090/cses-kit/pull/23))
 - [DYNOSuprovo](https://github.com/DYNOSuprovo) — `cses status` ([#10](https://github.com/yatharthsol090/cses-kit/pull/10))
 - [Chirudeva-Reddy](https://github.com/Chirudeva-Reddy) - `cses next` ([#11](https://github.com/yatharthsol090/cses-kit/pull/11))
+- [fatihcvs](https://github.com/fatihcvs) - open the selected solution from `cses next` ([#35](https://github.com/yatharthsol090/cses-kit/pull/35))
