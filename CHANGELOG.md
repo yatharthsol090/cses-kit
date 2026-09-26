@@ -15,6 +15,11 @@ the command surface stable.
 
 ## [Unreleased]
 
+### Added
+
+- C++ starters can be customized in `templates/cpp/template.cpp`; the root
+  `template.cpp` remains the fallback when that file is absent.
+
 ### Fixed
 
 - Open the selected solution file when moving to the next problem, including

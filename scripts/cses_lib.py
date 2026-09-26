@@ -136,6 +136,9 @@ def ensure_session(cookie_file: str | None = None) -> str:
 
 
 def template_cpp() -> str:
+    preferred = os.path.join(repo_root(), "templates", "cpp", "template.cpp")
+    if os.path.isfile(preferred):
+        return preferred
     return os.path.join(repo_root(), "template.cpp")
 
 
