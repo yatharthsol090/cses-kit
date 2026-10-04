@@ -18,9 +18,19 @@ the command surface stable.
 ### Fixed
 
 - Open the selected solution file when moving to the next problem, including
-  Python and JavaScript solutions when the C++ file is still a template.
+  Python and JavaScript solutions when the C++ file is still a template
+  ([#35](https://github.com/yatharthsol090/cses-kit/pull/35))
 
 ### Added
+
+- `cses run --timeout SEC` — optional per-sample timeout for local runs
+  ([#26](https://github.com/yatharthsol090/cses-kit/pull/26),
+  [#7](https://github.com/yatharthsol090/cses-kit/issues/7))
+
+- Roadmap-driven `sync`, `run`, `status`, and `tui` workflows, `--list`
+  options, and interactive `setup`, including text roadmaps containing task
+  IDs, CSES URLs, or slugs
+  ([#26](https://github.com/yatharthsol090/cses-kit/pull/26))
 
 ## [0.2.0] - 2026-09-24
 
@@ -28,12 +38,6 @@ the command surface stable.
 
 - `cses status` — solved vs remaining per category (`--unsolved`, `--category`, `--json`) ([#10](https://github.com/yatharthsol090/cses-kit/pull/10))
 
-- `cses run --timeout SEC` — optional per-sample timeout for local runs
-  ([#22](https://github.com/yatharthsol090/cses-kit/pull/22))
-
-- Roadmap-driven `sync`, `run`, `status`, and `tui` workflows, `--list`
-  options, and interactive `setup`, including text roadmaps containing task
-  IDs, CSES URLs, or slugs
 - `cses next` - open the next unsolved problem after the current folder, or the first unsolved in CSES list order ([#11](https://github.com/yatharthsol090/cses-kit/pull/11))
 
 ## [0.1.0] - 2026-09-15

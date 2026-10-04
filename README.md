@@ -45,9 +45,10 @@ CSES_NICK=your_username
 CSES_PASS=your_password
 ```
 
-For the complete interactive setup, run `cses setup`. It asks for the login
-details, editor (`nvim`, `vim`, `code`, `cursor`, or a custom command), existing
-problems directory, and starting roadmap.
+For TUI preferences, run `cses setup`. It asks for an editor (`nvim`, `vim`,
+`code`, `cursor`, or a custom command), an existing problems directory, and a
+starting roadmap. Login is still `cses login` or `CSES_NICK` / `CSES_PASS` in
+`.env`.
 
 On macOS, `include/bits/stdc++.h` is a shim so `#include <bits/stdc++.h>` works
 with Apple clang.
@@ -85,6 +86,7 @@ cses next trailing-zeroes              # open next unsolved after this problem
 
 cses login
 cses whoami
+cses setup                             # editor, problems dir, roadmap path
 cses install
 cses celebrate                         # preview the ACCEPTED banner
 cses status                            # solved vs remaining per category
