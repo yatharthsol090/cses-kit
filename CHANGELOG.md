@@ -15,11 +15,6 @@ the command surface stable.
 
 ## [Unreleased]
 
-### Added
-
-- C++ starters can be customized in `templates/cpp/template.cpp`; the root
-  `template.cpp` remains the fallback when that file is absent.
-
 ### Fixed
 
 - Open the selected solution file when moving to the next problem, including
@@ -27,6 +22,11 @@ the command surface stable.
   ([#35](https://github.com/yatharthsol090/cses-kit/pull/35))
 
 ### Added
+
+- C++ starters can be customized in `templates/cpp/template.cpp`; the root
+  `template.cpp` remains the fallback when that file is absent
+  ([#36](https://github.com/yatharthsol090/cses-kit/pull/36),
+  [#2](https://github.com/yatharthsol090/cses-kit/issues/2))
 
 - `cses run --timeout SEC` — optional per-sample timeout for local runs
   ([#26](https://github.com/yatharthsol090/cses-kit/pull/26),

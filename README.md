@@ -53,6 +53,15 @@ starting roadmap. Login is still `cses login` or `CSES_NICK` / `CSES_PASS` in
 On macOS, `include/bits/stdc++.h` is a shim so `#include <bits/stdc++.h>` works
 with Apple clang.
 
+## Custom C++ starter
+
+Edit `templates/cpp/template.cpp` to choose the starter copied by `cses new` and
+newly fetched problems. Existing `sol.cpp` files are never overwritten. If the
+preferred template is missing, the root `template.cpp` is used instead. Both the
+CLI and `scripts/run.sh` recognize an untouched preferred template when choosing
+between C++, Python and Node.js solutions. Python and Node.js starters remain at
+`template.py` and `template.js`.
+
 ## Roadmap and release notes
 
 A roadmap is an ordered, user-provided list of tasks. A text roadmap uses one
@@ -164,12 +173,3 @@ delay (or gentler) on bulk fetches.
 ## License
 
 MIT for this tooling. CSES content remains © its authors; fetch it yourself.
-
-### Custom C++ starter
-
-Edit `templates/cpp/template.cpp` to choose the starter copied by `cses new` and
-newly fetched problems. Existing `sol.cpp` files are never overwritten. If the
-preferred template is missing, the root `template.cpp` is used instead. Both the
-CLI and `scripts/run.sh` recognize an untouched preferred template when choosing
-between C++, Python and Node.js solutions. Python and Node.js starters remain at
-`template.py` and `template.js`.
