@@ -6,7 +6,7 @@ your first merge.
 
 - [yatharthsol090](https://github.com/yatharthsol090) — maintainer
 - [Nomee-123](https://github.com/Nomee-123) — portable `run.sh` timing ([#12](https://github.com/yatharthsol090/cses-kit/pull/12))
-- [Wael-06](https://github.com/Wael-06) — template detection ([#14](https://github.com/yatharthsol090/cses-kit/pull/14))
+- [Wael-06](https://github.com/Wael-06) — template detection ([#14](https://github.com/yatharthsol090/cses-kit/pull/14)); timeout, roadmap `--list`, TUI, and `setup` ([#26](https://github.com/yatharthsol090/cses-kit/pull/26))
 - [TayfurYldz](https://github.com/TayfurYldz) — Node.js run/submit ([#23](https://github.com/yatharthsol090/cses-kit/pull/23))
 - [DYNOSuprovo](https://github.com/DYNOSuprovo) — `cses status` ([#10](https://github.com/yatharthsol090/cses-kit/pull/10))
 - [Chirudeva-Reddy](https://github.com/Chirudeva-Reddy) - `cses next` ([#11](https://github.com/yatharthsol090/cses-kit/pull/11))
