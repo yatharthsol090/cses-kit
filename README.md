@@ -6,7 +6,7 @@ not the University of Helsinki [cses-cli](https://github.com/csesfi/cses-cli).
 
 Repo: [yatharthsol090/cses-kit](https://github.com/yatharthsol090/cses-kit).
 
-C++17 is the default (`sol.cpp` from `template.cpp`). Python 3 works if you add
+C++17 is the default (`sol.cpp` from `templates/cpp/template.cpp`). Python 3 works if you add
 `sol.py` (copy `template.py`), and Node.js works with `sol.js` (copy `template.js`).
 Folder run/submit keeps a real C++ solution as the default, otherwise prefers
 Python and then Node.js. Pass a `.py` or `.js` path to force that source.
@@ -52,6 +52,15 @@ starting roadmap. Login is still `cses login` or `CSES_NICK` / `CSES_PASS` in
 
 On macOS, `include/bits/stdc++.h` is a shim so `#include <bits/stdc++.h>` works
 with Apple clang.
+
+## Custom C++ starter
+
+Edit `templates/cpp/template.cpp` to choose the starter copied by `cses new` and
+newly fetched problems. Existing `sol.cpp` files are never overwritten. If the
+preferred template is missing, the root `template.cpp` is used instead. Both the
+CLI and `scripts/run.sh` recognize an untouched preferred template when choosing
+between C++, Python and Node.js solutions. Python and Node.js starters remain at
+`template.py` and `template.js`.
 
 ## Roadmap and release notes
 

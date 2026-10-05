@@ -13,6 +13,8 @@ set -euo pipefail
 
 # Resolve repo root (this script lives in <root>/scripts).
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+TEMPLATE="$ROOT/templates/cpp/template.cpp"
+[[ -f "$TEMPLATE" ]] || TEMPLATE="$ROOT/template.cpp"
 
 if [[ $# -lt 1 ]]; then
   echo "usage: scripts/run.sh <problem-dir-or-source> [-i] [--timeout SEC]" >&2
@@ -65,8 +67,8 @@ if [[ -f "$ARG" ]]; then
 else
   PROB="$ARG"
   CPP_TEMPLATE=false
-  if [[ -f "$PROB/sol.cpp" ]] && [[ -f "$ROOT/template.cpp" ]] \
-      && cmp -s <(tr -d '[:space:]' < "$PROB/sol.cpp") <(tr -d '[:space:]' < "$ROOT/template.cpp"); then
+  if [[ -f "$PROB/sol.cpp" ]] && [[ -f "$TEMPLATE" ]] \
+      && cmp -s <(tr -d '[:space:]' < "$PROB/sol.cpp") <(tr -d '[:space:]' < "$TEMPLATE"); then
     CPP_TEMPLATE=true
   fi
   if [[ -f "$PROB/sol.cpp" ]] && [[ "$CPP_TEMPLATE" == false ]]; then
